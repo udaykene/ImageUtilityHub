@@ -1,18 +1,29 @@
 {
-  "name": "backend",
+  "name": "image-utility-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for image formatting tool",
   "main": "app.js",
   "scripts": {
-    "dev": "node --watch src/app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
-  "keywords": [],
+  "keywords": [
+    "image",
+    "processing",
+    "sharp"
+  ],
   "author": "udaykene",
   "license": "ISC",
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.5",
+    "uuid": "^13.0.0"
+  },
+   "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }

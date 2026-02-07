@@ -1,1 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+
 @import "tailwindcss";
+
+@theme {
+  /* Define the fonts */
+  --font-display: "Space Grotesk", sans-serif;
+
+  /* Theme color mapping */
+  --color-border: var(--border);
+  --color-background-light: #ffffff;
+  --color-background-dark: #0f172a;
+  --color-card-dark: rgba(30, 41, 59, 0.5);
+  --color-primary: #137fec;
+
+  /* Custom Animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+}
+
+/* Variables for the border color */
+:root {
+  --border: #e2e8f0;
+}
+
+.dark {
+  --border: #1e293b;
+}
+
+/* In v4, we can define base styles directly or use @utility */
+/* Base styles: In v4, apply these directly to tags without @layer base */
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display;
+  transition: background-color 0.3s ease;
+}
+
+/* Custom components using standard CSS classes */
+@utility glass-card {
+  @apply backdrop-blur-xl bg-white/80 dark:bg-card-dark border border-white/20 dark:border-white/10;
+}
+
+@utility btn-primary {
+  @apply bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2;
+}
+
+@utility btn-secondary {
+  @apply bg-white/5 hover:bg-white/10 dark:bg-white/5 dark:hover:bg-white/10 border border-white/10 text-slate-700 dark:text-white px-6 py-3 rounded-xl font-bold transition-all;
+}
+
+/* Standard CSS for specific custom classes */
+.hero-gradient {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(19, 127, 236, 0.15) 0%,
+    transparent 70%
+  );
+}
+
+.glow-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 20px rgba(19, 127, 236, 0.3);
+  border-color: rgba(19, 127, 236, 0.5);
+}
