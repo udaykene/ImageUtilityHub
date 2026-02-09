@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileImage, Download, CheckSquare, Package } from 'lucide-react';
+import { FileImage, Download, CheckSquare, Package, MessageCircle, Mail, Cloud } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 
 // Mock extracted images
@@ -184,6 +184,46 @@ export default function Extract() {
                     <Package className="size-4" />
                     Download ZIP
                   </motion.button>
+
+                  {/* Share Buttons */}
+                  {extracted && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 mt-4"
+                    >
+                      <span className="text-xs text-slate-400 font-medium">Share:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.open('https://wa.me/?text=Check out my extracted images!', '_blank')}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors"
+                      >
+                        <MessageCircle className="size-3.5" />
+                        WhatsApp
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.location.href = 'mailto:?subject=Extracted Images&body=Here are the images'}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
+                      >
+                        <Mail className="size-3.5" />
+                        Email
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.open('https://drive.google.com/drive/my-drive', '_blank')}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium transition-colors"
+                      >
+                        <Cloud className="size-3.5" />
+                        Drive
+                      </motion.button>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 

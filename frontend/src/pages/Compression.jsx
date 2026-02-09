@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Download, Settings, Info } from 'lucide-react';
+import { Zap, Download, Settings, Info, MessageCircle, Mail, Cloud } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { ToolShapeDecoration } from '@/components/Shapes';
 
@@ -230,6 +230,46 @@ export default function Compress() {
                     <Download className="size-5" />
                     Download Result
                   </motion.button>
+                
+                  {/* Share Buttons */}
+                  {file && !converting && (
+                    <div className="pt-4 border-t border-white/5">
+                      <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                        Share Result
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => window.open('https://wa.me/?text=Check out my file!', '_blank')}
+                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
+                        >
+                          <MessageCircle className="size-5" />
+                          <span className="text-xs font-medium">WhatsApp</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => window.location.href = 'mailto:?subject=Shared File&body=Here is my file'}
+                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                        >
+                          <Mail className="size-5" />
+                          <span className="text-xs font-medium">Email</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => window.open('https://drive.google.com/drive/my-drive', '_blank')}
+                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
+                        >
+                          <Cloud className="size-5" />
+                          <span className="text-xs font-medium">Drive</span>
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* File Info */}
