@@ -140,7 +140,7 @@ export default function Home() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative group hidden lg:block"
+              className="relative group hidden lg:block!"
             >
               <div className="relative aspect-square w-full max-w-[500px] mx-auto">
                 {/* Glow effect */}
@@ -290,7 +290,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 sm:py-20 relative">
+      {/* <section className="py-12 sm:py-20 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -298,7 +298,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="rounded-3xl p-8 sm:p-12 overflow-hidden relative bg-gradient-to-br from-primary to-blue-800 text-center flex flex-col items-center gap-6 sm:gap-8"
           >
-            {/* Decorative elements */}
+            
             <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 size-48 sm:size-64 bg-white/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 size-48 sm:size-64 bg-black/20 rounded-full blur-3xl"></div>
 
@@ -327,7 +327,7 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }

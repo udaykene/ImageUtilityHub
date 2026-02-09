@@ -48,7 +48,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-8">
+        <nav className="hidden lg:flex! items-center gap-8">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -84,7 +84,7 @@ export default function Header() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="hidden sm:flex btn-primary text-sm"
+            className="hidden sm:flex! btn-primary text-sm"
           >
             Get Started
           </motion.button>
