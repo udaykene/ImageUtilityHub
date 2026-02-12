@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Sparkles } from 'lucide-react';
+import { Moon, Sun, Sparkles, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
@@ -66,28 +66,16 @@ export default function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Theme Toggle */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleTheme}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              <Sun className="size-4 sm:size-5 text-yellow-400" />
-            ) : (
-              <Moon className="size-4 sm:size-5 text-slate-700" />
-            )}
-          </motion.button>
-
-          {/* CTA Button - Hidden on mobile */}
-          <motion.button
+          {/* Contact/Feedback Link */}
+          <motion.a
+            href="mailto:support@formatflow.com"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="hidden sm:flex! btn-primary text-sm"
+            className="hidden sm:flex! items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-sm font-medium text-slate-600 dark:text-slate-300"
           >
-            Get Started
-          </motion.button>
+            <Mail className="size-4" />
+            <span>Contact</span>
+          </motion.a>
         </div>
       </div>
     </motion.header>

@@ -73,6 +73,18 @@ const features = [
 ];
 
 export default function Home() {
+  // Function to handle smooth scrolling
+  const scrollToTools = (e) => {
+    e.preventDefault();
+    const toolsSection = document.getElementById('tools');
+    if (toolsSection) {
+      toolsSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -119,6 +131,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 mx-auto lg:mx-0">
                 <motion.a
                   href="#tools"
+                  onClick={scrollToTools}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="btn-primary text-base sm:text-lg justify-center"
