@@ -307,12 +307,12 @@ export default function ImagesToPDF() {
                     disabled={images.length === 0}
                     className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
                       images.length > 0
-                        ? 'border-white/10 hover:bg-green-600 hover:border-green-600 text-white'
+                        ? 'border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white'
                         : 'border-white/5 text-slate-500 cursor-not-allowed'
                     }`}
                   >
                     <Download className="size-5" />
-                    Download PDF
+                    Download 
                   </motion.button>
 
                   {/* Share Buttons */}
@@ -336,7 +336,7 @@ export default function ImagesToPDF() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => window.location.href = 'mailto:?subject=My PDF&body=Here is my PDF file'}
-                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
                         >
                           <Mail className="size-5" />
                           <span className="text-xs font-medium">Email</span>

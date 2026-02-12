@@ -4,13 +4,69 @@ import { RefreshCw, Download, Sparkles, MessageCircle, Mail, Cloud } from 'lucid
 import FileUpload from '@/components/FileUpload';
 
 const formats = [
-  { value: 'jpg', label: 'JPG', description: 'Standard' },
-  { value: 'png', label: 'PNG', description: 'Lossless' },
-  { value: 'webp', label: 'WEBP', description: 'Web optimized' },
-  { value: 'avif', label: 'AVIF', description: 'Next-gen' },
+  { 
+    value: 'jpg', 
+    label: 'JPG', 
+    description: 'Standard format for photographs with good compression'
+  },
+  { 
+    value: 'jpeg', 
+    label: 'JPEG', 
+    description: 'Standard format for photographs with good compression'
+  },
+  { 
+    value: 'png', 
+    label: 'PNG', 
+    description: 'Lossless compression with transparency support'
+  },
+  { 
+    value: 'webp', 
+    label: 'WebP', 
+    description: 'Modern format with superior compression'
+  },
+  { 
+    value: 'avif', 
+    label: 'AVIF', 
+    description: 'Next-generation format with excellent compression'
+  },
+  { 
+    value: 'tiff', 
+    label: 'TIFF', 
+    description: 'High-quality format for professional use'
+  },
+  { 
+    value: 'gif', 
+    label: 'GIF (Sharp v0.30+)', 
+    description: 'Animated images and simple graphics'
+  },
+  { 
+    value: 'raw', 
+    label: 'RAW pixel data', 
+    description: 'Unprocessed image data for maximum quality'
+  },
 ];
 
 export default function Convert() {
+  // Email share handler
+  const handleEmailShare = () => {
+    try {
+      const subject = 'Check out my converted image!';
+      const body = 'I wanted to share this converted image with you.\n\nCreated with FormatFlow.';
+      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      // Create and click a temporary link
+      const a = document.createElement('a');
+      a.href = mailtoLink;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      // Fallback: Show alert
+      alert('Please open your email client and compose a new email to share your file.\n\nSubject: Check out my converted image!');
+    }
+  };
+
   const [file, setFile] = useState(null);
   const [targetFormat, setTargetFormat] = useState('webp');
   const [quality, setQuality] = useState(80);
@@ -63,37 +119,8 @@ export default function Convert() {
               maxSize={20}
               onFileSelect={handleFileSelect}
               title="Drag & drop your image"
-              subtitle="Supports JPG, PNG, WebP, and AVIF up to 20MB"
+              subtitle="Supports all major image formats up to 20MB"
             />
-
-            {/* Format Selection Pills */}
-            {file && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-2xl p-6"
-              >
-                <h3 className="font-bold text-lg mb-4">Select Target Format</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {formats.map((format) => (
-                    <motion.button
-                      key={format.value}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setTargetFormat(format.value)}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        targetFormat === format.value
-                          ? 'border-primary bg-primary/10 text-white'
-                          : 'border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <p className="font-black text-lg">{format.label}</p>
-                      <p className="text-xs text-slate-400 mt-1">{format.description}</p>
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
 
             {/* Preview */}
             {file && (
@@ -112,6 +139,7 @@ export default function Convert() {
                 </div>
               </motion.div>
             )}
+
           </motion.div>
 
           {/* Right Column - Settings */}
@@ -128,11 +156,33 @@ export default function Convert() {
               </div>
 
               <div className="space-y-6">
-                {/* Quality */}
+                {/* Output Format Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Output Format
+                  </label>
+                  <select
+                    value={targetFormat}
+                    onChange={(e) => setTargetFormat(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 focus:border-primary focus:ring-2 focus:ring-primary outline-none transition-all text-sm font-medium cursor-pointer"
+                  >
+                    {formats.map((format) => (
+                      <option key={format.value} value={format.value}>
+                        {format.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {formats.find(f => f.value === targetFormat)?.description}
+                  </p>
+                </div>
+
+                   <div className="space-y-6">
+                {/* Quality Slider */}
                 <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <label className="text-sm font-medium text-slate-400">Quality</label>
-                    <span className="text-primary font-bold">{quality}%</span>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-slate-400">Quality vs. Size</label>
+                    <span className="text-primary font-bold text-lg">{quality}%</span>
                   </div>
                   <input
                     type="range"
@@ -142,15 +192,10 @@ export default function Convert() {
                     onChange={(e) => setQuality(parseInt(e.target.value))}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
-                </div>
-
-                {/* Format Info */}
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
-                  <p className="text-xs font-bold text-primary mb-2">TARGET FORMAT</p>
-                  <p className="font-bold text-2xl uppercase">{targetFormat}</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {formats.find((f) => f.value === targetFormat)?.description}
-                  </p>
+                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                    <span>Small Size</span>
+                    <span>High Quality</span>
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -190,7 +235,7 @@ export default function Convert() {
                     disabled={!file || converting}
                     className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
                       file && !converting
-                        ? 'border-white/10 hover:bg-green-600 hover:border-green-600 text-white'
+                        ? 'border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white'
                         : 'border-white/5 text-slate-500 cursor-not-allowed'
                     }`}
                   >
@@ -219,8 +264,8 @@ export default function Convert() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.location.href = 'mailto:?subject=Shared File&body=Here is my file'}
-                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                          onClick={handleEmailShare}
+                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
                         >
                           <Mail className="size-5" />
                           <span className="text-xs font-medium">Email</span>
@@ -241,6 +286,7 @@ export default function Convert() {
 
               </div>
             </div>
+         </div>
 
             {/* Info Box */}
             <motion.div
