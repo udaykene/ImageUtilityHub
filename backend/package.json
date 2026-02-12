@@ -18,12 +18,14 @@
   "dependencies": {
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
     "express": "^5.2.1",
+    "mongoose": "^9.2.1",
     "multer": "^2.0.2",
     "sharp": "^0.34.5",
     "uuid": "^13.0.0"
   },
-   "devDependencies": {
+  "devDependencies": {
     "nodemon": "^3.0.1"
   }
 }
