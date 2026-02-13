@@ -1,27 +1,45 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FilePlus, Download, X, GripVertical, Settings, MessageCircle, Mail, Cloud } from 'lucide-react';
-import FileUpload from '@/components/FileUpload';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FilePlus,
+  Download,
+  X,
+  GripVertical,
+  Settings,
+  MessageCircle,
+  Mail,
+  Cloud,
+} from "lucide-react";
+import FileUpload from "@/components/FileUpload";
+import { createPDFFromImages, downloadFile } from "@/services/api";
 
 export default function ImagesToPDF() {
   const [images, setImages] = useState([]);
-  const [orientation, setOrientation] = useState('portrait');
-  const [margin, setMargin] = useState('none');
-  const [pageSize, setPageSize] = useState('a4');
+  const [orientation, setOrientation] = useState("portrait");
+  const [margin, setMargin] = useState("none");
+  const [pageSize, setPageSize] = useState("a4");
   const [generating, setGenerating] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleFileSelect = (selectedFile) => {
-    if (selectedFile) {
-      setImages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          file: selectedFile,
-          name: selectedFile.name,
-          size: selectedFile.size,
-        },
-      ]);
+  const handleFileSelect = (selectedFiles) => {
+    if (!selectedFiles) {
+      return;
     }
+
+    const filesArray = Array.isArray(selectedFiles)
+      ? selectedFiles
+      : [selectedFiles];
+
+    const newImages = filesArray.map((file) => ({
+      id: Date.now() + Math.random(),
+      file: file,
+      name: file.name,
+      size: file.size,
+    }));
+
+    setImages((prev) => [...prev, ...newImages]);
   };
 
   const removeImage = (id) => {
@@ -32,13 +50,58 @@ export default function ImagesToPDF() {
     setImages([]);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (images.length === 0) return;
     setGenerating(true);
+    setError(null);
+    setResult(null);
 
-    setTimeout(() => {
+    try {
+      const files = images.map((img) => img.file);
+      const response = await createPDFFromImages(files, {
+        pageSize,
+        orientation,
+        margin,
+        quality: 90,
+      });
+
+      setResult(response.data);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      setError(err.response?.data?.message || "Failed to generate PDF");
+    } finally {
       setGenerating(false);
-    }, 2000);
+    }
+  };
+
+  const handleDownload = () => {
+    if (result && result.filename) {
+      downloadFile(result.filename);
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newImages = [...images];
+    const draggedItem = newImages[draggedIndex];
+
+    newImages.splice(draggedIndex, 1);
+    newImages.splice(index, 0, draggedItem);
+
+    setImages(newImages);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   return (
@@ -54,10 +117,13 @@ export default function ImagesToPDF() {
             <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
               <FilePlus className="size-6" />
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">Images to PDF</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
+              Images to PDF
+            </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl">
-            Combine multiple images into a single, professional PDF document with custom page settings.
+            Combine multiple images into a single, professional PDF document
+            with custom page settings.
           </p>
         </motion.div>
 
@@ -70,38 +136,26 @@ export default function ImagesToPDF() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-8 space-y-6"
           >
-            {/* Upload Area */}
-            <div className="glass-card rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 hover:border-primary/50 transition-all">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="p-4 rounded-full bg-primary/10 text-primary">
-                  <FilePlus className="size-8" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold mb-1">Add more images</p>
-                  <p className="text-sm text-slate-400">Drag and drop JPG, PNG, or TIFF files here</p>
-                </div>
+            {/* File Upload Component */}
+            <FileUpload
+              accept="image/*"
+              maxSize={10}
+              multiple={true}
+              onFileSelect={handleFileSelect}
+              title="Drop multiple images here"
+              subtitle="JPG, PNG, TIFF up to 10MB each"
+            />
 
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelect(file);
-                      e.target.value = '';
-                    }}
-                  />
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="btn-primary text-sm"
-                  >
-                    Upload Images
-                  </motion.div>
-                </label>
-              </div>
-            </div>
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-xl p-4 border-2 border-red-500/50 bg-red-500/10"
+              >
+                <p className="text-red-500 font-medium">{error}</p>
+              </motion.div>
+            )}
 
             {/* Images List */}
             {images.length > 0 && (
@@ -124,55 +178,67 @@ export default function ImagesToPDF() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                  <AnimatePresence>
-                    {images.map((image, index) => (
-                      <motion.div
-                        key={image.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="group relative aspect-[3/4] rounded-xl overflow-hidden glass-card hover:border-primary transition-all cursor-grab active:cursor-grabbing"
-                      >
-                        {/* Image Preview */}
-                        <div className="absolute inset-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                          <img
-                            src={URL.createObjectURL(image.file)}
-                            alt={image.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 opacity-60" />
-
-                        {/* Order Badge */}
-                        <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                          {String(index + 1).padStart(2, '0')}
-                        </div>
-
-                        {/* Remove Button */}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => removeImage(image.id)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                {/* Scrollable Grid Container */}
+                <div className="max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <AnimatePresence>
+                      {images.map((image, index) => (
+                        <motion.div
+                          key={image.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDragEnd={handleDragEnd}
+                          className={`group relative aspect-[3/4] rounded-xl overflow-hidden glass-card hover:border-primary transition-all cursor-grab active:cursor-grabbing ${
+                            draggedIndex === index ? "opacity-50 scale-95" : ""
+                          }`}
                         >
-                          <X className="size-4" />
-                        </motion.button>
+                          {/* Image Preview */}
+                          <div className="absolute inset-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <img
+                              src={URL.createObjectURL(image.file)}
+                              alt={image.name}
+                              className="w-full h-full object-cover"
+                              draggable={false}
+                            />
+                          </div>
 
-                        {/* Drag Handle */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <GripVertical className="size-8 text-white drop-shadow-lg" />
-                        </div>
+                          {/* Gradient Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 opacity-60" />
 
-                        {/* Filename */}
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <p className="text-white text-xs font-medium truncate">{image.name}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                          {/* Order Badge */}
+                          <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                            {String(index + 1).padStart(2, "0")}
+                          </div>
+
+                          {/* Remove Button */}
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => removeImage(image.id)}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 z-10"
+                          >
+                            <X className="size-4" />
+                          </motion.button>
+
+                          {/* Drag Handle */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <GripVertical className="size-8 text-white drop-shadow-lg" />
+                          </div>
+
+                          {/* Filename */}
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <p className="text-white text-xs font-medium truncate">
+                              {image.name}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -185,7 +251,7 @@ export default function ImagesToPDF() {
             transition={{ delay: 0.3 }}
             className="lg:col-span-4"
           >
-            <div className="glass-card rounded-xl p-6 sticky top-24">
+            <div className="glass-card rounded-xl p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Settings className="size-5 text-primary" />
                 <h2 className="text-xl font-bold">PDF Configuration</h2>
@@ -199,21 +265,21 @@ export default function ImagesToPDF() {
                   </label>
                   <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                     <button
-                      onClick={() => setOrientation('portrait')}
+                      onClick={() => setOrientation("portrait")}
                       className={`py-2 rounded-md font-bold text-sm transition-all ${
-                        orientation === 'portrait'
-                          ? 'bg-white dark:bg-primary text-slate-900 dark:text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        orientation === "portrait"
+                          ? "bg-white dark:bg-primary text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       }`}
                     >
                       Portrait
                     </button>
                     <button
-                      onClick={() => setOrientation('landscape')}
+                      onClick={() => setOrientation("landscape")}
                       className={`py-2 rounded-md font-bold text-sm transition-all ${
-                        orientation === 'landscape'
-                          ? 'bg-white dark:bg-primary text-slate-900 dark:text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        orientation === "landscape"
+                          ? "bg-white dark:bg-primary text-slate-900 dark:text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       }`}
                     >
                       Landscape
@@ -228,16 +294,16 @@ export default function ImagesToPDF() {
                   </label>
                   <div className="space-y-2">
                     {[
-                      { value: 'none', label: 'None (Full bleed)' },
-                      { value: 'small', label: 'Small (0.5 inch)' },
-                      { value: 'large', label: 'Large (1.0 inch)' },
+                      { value: "none", label: "None (Full bleed)" },
+                      { value: "small", label: "Small (0.5 inch)" },
+                      { value: "large", label: "Large (1.0 inch)" },
                     ].map((option) => (
                       <label
                         key={option.value}
                         className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                           margin === option.value
-                            ? 'border-primary bg-primary/5'
-                            : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                            ? "border-primary bg-primary/5"
+                            : "border-slate-200 dark:border-slate-700 hover:border-primary/50"
                         }`}
                       >
                         <input
@@ -247,7 +313,9 @@ export default function ImagesToPDF() {
                           onChange={() => setMargin(option.value)}
                           className="w-4 h-4 text-primary focus:ring-primary"
                         />
-                        <span className="text-sm font-medium">{option.label}</span>
+                        <span className="text-sm font-medium">
+                          {option.label}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -279,15 +347,19 @@ export default function ImagesToPDF() {
                     disabled={images.length === 0 || generating}
                     className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
                       images.length > 0 && !generating
-                        ? 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                        : "bg-slate-800 text-slate-500 cursor-not-allowed"
                     }`}
                   >
                     {generating ? (
                       <>
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
                         >
                           <FilePlus className="size-5" />
                         </motion.div>
@@ -302,17 +374,18 @@ export default function ImagesToPDF() {
                   </motion.button>
 
                   <motion.button
-                    whileHover={{ scale: images.length > 0 ? 1.02 : 1 }}
-                    whileTap={{ scale: images.length > 0 ? 0.98 : 1 }}
-                    disabled={images.length === 0}
+                    whileHover={{ scale: result ? 1.02 : 1 }}
+                    whileTap={{ scale: result ? 0.98 : 1 }}
+                    onClick={handleDownload}
+                    disabled={!result}
                     className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
-                      images.length > 0
-                        ? 'border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white'
-                        : 'border-white/5 text-slate-500 cursor-not-allowed'
+                      result
+                        ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white"
+                        : "border-white/5 text-slate-500 cursor-not-allowed"
                     }`}
                   >
                     <Download className="size-5" />
-                    Download 
+                    Download
                   </motion.button>
 
                   {/* Share Buttons */}
@@ -325,7 +398,12 @@ export default function ImagesToPDF() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.open('https://wa.me/?text=Check out my PDF!', '_blank')}
+                          onClick={() =>
+                            window.open(
+                              "https://wa.me/?text=Check out my PDF!",
+                              "_blank",
+                            )
+                          }
                           className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
                         >
                           <MessageCircle className="size-5" />
@@ -335,7 +413,10 @@ export default function ImagesToPDF() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.location.href = 'mailto:?subject=My PDF&body=Here is my PDF file'}
+                          onClick={() =>
+                            (window.location.href =
+                              "mailto:?subject=My PDF&body=Here is my PDF file")
+                          }
                           className="flex flex-col items-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
                         >
                           <Mail className="size-5" />
@@ -345,7 +426,12 @@ export default function ImagesToPDF() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.open('https://drive.google.com/drive/my-drive', '_blank')}
+                          onClick={() =>
+                            window.open(
+                              "https://drive.google.com/drive/my-drive",
+                              "_blank",
+                            )
+                          }
                           className="flex flex-col items-center gap-2 p-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
                         >
                           <Cloud className="size-5" />

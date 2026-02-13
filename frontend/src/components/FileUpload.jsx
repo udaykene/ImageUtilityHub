@@ -12,7 +12,7 @@ export default function FileUpload({
   subtitle = `Supports ${accept || 'all formats'} up to ${maxSize}MB`
 }) {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -29,45 +29,57 @@ export default function FileUpload({
     e.stopPropagation();
     setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      const file = files[0];
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
+  }, [maxSize, onFileSelect, multiple]);
+
+  const processFiles = (fileList) => {
+    const validFiles = [];
+    
+    for (const file of fileList) {
       const fileSizeMB = file.size / (1024 * 1024);
       
       if (fileSizeMB > maxSize) {
-        alert(`File size exceeds ${maxSize}MB limit`);
-        return;
+        alert(`File "${file.name}" exceeds ${maxSize}MB limit`);
+        continue;
       }
-
-      setSelectedFile(file);
-      if (onFileSelect) {
-        onFileSelect(file);
-      }
+      
+      validFiles.push(file);
+      
+      // If not multiple, only take first valid file
+      if (!multiple) break;
     }
-  }, [maxSize, onFileSelect]);
 
-  const handleFileInput = (e) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-      const fileSizeMB = file.size / (1024 * 1024);
-      
-      if (fileSizeMB > maxSize) {
-        alert(`File size exceeds ${maxSize}MB limit`);
-        return;
-      }
-
-      setSelectedFile(file);
-      if (onFileSelect) {
-        onFileSelect(file);
+    if (validFiles.length > 0) {
+      if (multiple) {
+        setSelectedFiles(validFiles);
+        if (onFileSelect) {
+          onFileSelect(validFiles);
+        }
+      } else {
+        setSelectedFiles([validFiles[0]]);
+        if (onFileSelect) {
+          onFileSelect(validFiles[0]);
+        }
       }
     }
   };
 
-  const removeFile = () => {
-    setSelectedFile(null);
+  const handleFileInput = (e) => {
+    const files = Array.from(e.target.files || []);
+    processFiles(files);
+  };
+
+  const removeFile = (index) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    
     if (onFileSelect) {
-      onFileSelect(null);
+      if (multiple) {
+        onFileSelect(newFiles.length > 0 ? newFiles : null);
+      } else {
+        onFileSelect(null);
+      }
     }
   };
 
@@ -82,7 +94,7 @@ export default function FileUpload({
   return (
     <div className="w-full">
       <AnimatePresence mode="wait">
-        {!selectedFile ? (
+        {selectedFiles.length === 0 ? (
           <motion.div
             key="upload"
             initial={{ opacity: 0, y: 20 }}
@@ -117,6 +129,9 @@ export default function FileUpload({
             <div className="flex flex-col items-center gap-2">
               <p className="text-lg sm:text-xl font-bold text-center">{title}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center px-4">{subtitle}</p>
+              {multiple && (
+                <p className="text-xs text-primary font-medium">You can select multiple files</p>
+              )}
             </div>
 
             <label className="cursor-pointer">
@@ -138,31 +153,62 @@ export default function FileUpload({
           </motion.div>
         ) : (
           <motion.div
-            key="file"
+            key="files"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-card rounded-2xl p-6 flex items-center gap-4"
+            className="space-y-3"
           >
-            <div className="p-3 rounded-xl bg-primary/10 text-primary">
-              <File className="size-6" />
-            </div>
+            {selectedFiles.map((file, index) => (
+              <motion.div
+                key={`${file.name}-${index}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ delay: index * 0.05 }}
+                className="glass-card rounded-2xl p-6 flex items-center gap-4"
+              >
+                <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                  <File className="size-6" />
+                </div>
 
-            <div className="flex-1 min-w-0">
-              <p className="font-bold truncate">{selectedFile.name}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {formatFileSize(selectedFile.size)}
-              </p>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold truncate">{file.name}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {formatFileSize(file.size)}
+                  </p>
+                </div>
 
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={removeFile}
-              className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
-            >
-              <X className="size-5" />
-            </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => removeFile(index)}
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="size-5" />
+                </motion.button>
+              </motion.div>
+            ))}
+
+            {multiple && (
+              <label className="cursor-pointer block">
+                <input
+                  type="file"
+                  className="hidden"
+                  accept={accept}
+                  multiple={multiple}
+                  onChange={handleFileInput}
+                />
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="glass-card rounded-xl p-4 flex items-center justify-center gap-2 border-2 border-dashed border-primary/30 hover:border-primary transition-all cursor-pointer"
+                >
+                  <Upload className="size-5 text-primary" />
+                  <span className="font-medium text-primary">Add More Files</span>
+                </motion.div>
+              </label>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
