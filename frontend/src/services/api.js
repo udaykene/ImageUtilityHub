@@ -18,20 +18,22 @@ export const compressImage = async (file, options = {}) => {
   const formData = new FormData();
   formData.append("image", file);
 
-  // Add options
-  if (options.quality) formData.append("quality", options.quality);
-  if (options.targetSize) formData.append("targetSize", options.targetSize);
-  if (options.outputFormat)
+  // Send target percentage (how much of original size to keep)
+  // quality slider value represents compression level: 10 = compress to 10% of original
+  if (options.quality) {
+    formData.append("targetPercentage", options.quality);
+  }
+
+  if (options.outputFormat) {
     formData.append("outputFormat", options.outputFormat);
-  if (options.stripMetadata !== undefined)
+  }
+  if (options.stripMetadata !== undefined) {
     formData.append("stripMetadata", options.stripMetadata);
+  }
 
   const response = await api.post("/compress", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
   });
-
   return response.data;
 };
 

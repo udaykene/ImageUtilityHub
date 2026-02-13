@@ -3,11 +3,21 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
 /**
- * Generate a unique filename with extension
+ * Generate a unique filename with extension (Windows-style numbering, no spaces)
  */
-const generateUniqueFilename = (originalName, newExtension = null) => {
+const generateUniqueFilename = (dirPath, originalName, newExtension = null) => {
   const ext = newExtension || path.extname(originalName);
-  return `${uuidv4()}${ext}`;
+  const nameWithoutExt = path.parse(originalName).name;
+
+  let finalName = `${nameWithoutExt}${ext}`;
+  let counter = 1;
+
+  while (fs.existsSync(path.join(dirPath, finalName))) {
+    finalName = `${nameWithoutExt}(${counter})${ext}`;
+    counter++;
+  }
+
+  return finalName;
 };
 
 /**

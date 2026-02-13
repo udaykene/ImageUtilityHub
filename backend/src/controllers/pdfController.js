@@ -169,7 +169,11 @@ const createPDFFromImages = async (req, res) => {
 
     // Save PDF
     const pdfBytes = await pdfDoc.save();
-    const outputFilename = generateUniqueFilename("output.pdf", ".pdf");
+    const outputFilename = generateUniqueFilename(
+      outputsDir,
+      "output.pdf",
+      ".pdf"
+    );
     const outputPath = path.join(outputsDir, outputFilename);
 
     fs.writeFileSync(outputPath, pdfBytes);

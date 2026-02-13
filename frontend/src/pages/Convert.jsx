@@ -1,88 +1,102 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { RefreshCw, Download, Sparkles, MessageCircle, Mail, Cloud } from 'lucide-react';
-import FileUpload from '@/components/FileUpload';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  RefreshCw,
+  Download,
+  Sparkles,
+  MessageCircle,
+  Mail,
+  Cloud,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import FileUpload from "@/components/FileUpload";
+import { convertImage, downloadFile } from "@/services/api";
 
 const formats = [
-  { 
-    value: 'jpg', 
-    label: 'JPG', 
-    description: 'Standard format for photographs with good compression'
+  {
+    value: "jpg",
+    label: "JPG",
+    description: "Standard format for photographs with good compression",
   },
-  { 
-    value: 'jpeg', 
-    label: 'JPEG', 
-    description: 'Standard format for photographs with good compression'
+  {
+    value: "png",
+    label: "PNG",
+    description: "Lossless compression with transparency support",
   },
-  { 
-    value: 'png', 
-    label: 'PNG', 
-    description: 'Lossless compression with transparency support'
+  {
+    value: "webp",
+    label: "WebP",
+    description: "Modern format with superior compression",
   },
-  { 
-    value: 'webp', 
-    label: 'WebP', 
-    description: 'Modern format with superior compression'
-  },
-  { 
-    value: 'avif', 
-    label: 'AVIF', 
-    description: 'Next-generation format with excellent compression'
-  },
-  { 
-    value: 'tiff', 
-    label: 'TIFF', 
-    description: 'High-quality format for professional use'
-  },
-  { 
-    value: 'gif', 
-    label: 'GIF (Sharp v0.30+)', 
-    description: 'Animated images and simple graphics'
-  },
-  { 
-    value: 'raw', 
-    label: 'RAW pixel data', 
-    description: 'Unprocessed image data for maximum quality'
+  {
+    value: "avif",
+    label: "AVIF",
+    description: "Next-generation format with excellent compression",
   },
 ];
+
 
 export default function Convert() {
   // Email share handler
   const handleEmailShare = () => {
     try {
-      const subject = 'Check out my converted image!';
-      const body = 'I wanted to share this converted image with you.\n\nCreated with FormatFlow.';
+      const subject = "Check out my converted image!";
+      const body =
+        "I wanted to share this converted image with you.\n\nCreated with FormatFlow.";
       const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      
+
       // Create and click a temporary link
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = mailtoLink;
-      a.target = '_blank';
+      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     } catch (error) {
       // Fallback: Show alert
-      alert('Please open your email client and compose a new email to share your file.\n\nSubject: Check out my converted image!');
+      alert(
+        "Please open your email client and compose a new email to share your file.\n\nSubject: Check out my converted image!",
+      );
     }
   };
 
   const [file, setFile] = useState(null);
-  const [targetFormat, setTargetFormat] = useState('webp');
-  const [quality, setQuality] = useState(80);
+  const [targetFormat, setTargetFormat] = useState("webp");
   const [converting, setConverting] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
+    setResult(null);
+    setError(null);
   };
 
-  const handleConvert = () => {
+  const handleConvert = async () => {
     if (!file) return;
     setConverting(true);
-    
-    setTimeout(() => {
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await convertImage(file, {
+        outputFormat: targetFormat,
+      });
+      setResult(response);
+    } catch (err) {
+      console.error("Conversion error:", err);
+      setError(err.response?.data?.message || "Failed to convert image");
+    } finally {
       setConverting(false);
-    }, 2000);
+    }
+  };
+
+  const handleDownload = () => {
+    const filename = result?.data?.filename || result?.filename;
+    if (filename) {
+      downloadFile(filename);
+    }
   };
 
   return (
@@ -98,10 +112,13 @@ export default function Convert() {
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
               <RefreshCw className="size-6" />
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">Format Conversion</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
+              Format Conversion
+            </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl">
-            Convert between PNG, JPG, WebP, and AVIF formats with quality preservation and batch support.
+            Convert between PNG, JPG, WebP, and AVIF formats with high fidelity
+            and batch support.
           </p>
         </motion.div>
 
@@ -139,7 +156,6 @@ export default function Convert() {
                 </div>
               </motion.div>
             )}
-
           </motion.div>
 
           {/* Right Column - Settings */}
@@ -173,76 +189,105 @@ export default function Convert() {
                     ))}
                   </select>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    {formats.find(f => f.value === targetFormat)?.description}
+                    {formats.find((f) => f.value === targetFormat)?.description}
                   </p>
                 </div>
 
-                   <div className="space-y-6">
-                {/* Quality Slider */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-slate-400">Quality vs. Size</label>
-                    <span className="text-primary font-bold text-lg">{quality}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={quality}
-                    onChange={(e) => setQuality(parseInt(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    <span>Small Size</span>
-                    <span>High Quality</span>
-                  </div>
-                </div>
+                <div className="space-y-6">
+                  {/* Status Messages */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-sm"
+                    >
+                      <AlertCircle className="size-5 shrink-0" />
+                      <p>{error}</p>
+                    </motion.div>
+                  )}
 
-                {/* Actions */}
-                <div className="space-y-3 pt-4">
-                  <motion.button
-                    whileHover={{ scale: file ? 1.02 : 1 }}
-                    whileTap={{ scale: file ? 0.98 : 1 }}
-                    onClick={handleConvert}
-                    disabled={!file || converting}
-                    className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
-                      file && !converting
-                        ? 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {converting ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        >
+                  {result && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex flex-col gap-2"
+                    >
+                      <div className="flex items-center gap-3 text-green-400 text-sm font-bold">
+                        <CheckCircle2 className="size-5 shrink-0" />
+                        <p>Conversion Successful!</p>
+                      </div>
+                      <div className="space-y-1 pl-8">
+                        <p className="text-xs text-slate-400">
+                          New Size:{" "}
+                          <span className="text-green-400 font-bold">
+                            {result.data?.compressedSize ||
+                              result.compressedSize}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Format:{" "}
+                          <span className="text-green-400 uppercase font-bold">
+                            {targetFormat}
+                          </span>
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="space-y-3 pt-4">
+                    <motion.button
+                      whileHover={{ scale: file ? 1.02 : 1 }}
+                      whileTap={{ scale: file ? 0.98 : 1 }}
+                      onClick={handleConvert}
+                      disabled={!file || converting}
+                      className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
+                        file && !converting
+                          ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                          : "bg-slate-800 text-slate-500 cursor-not-allowed"
+                      }`}
+                    >
+                      {converting ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          >
+                            <RefreshCw className="size-5" />
+                          </motion.div>
+                          Converting...
+                        </>
+                      ) : (
+                        <>
                           <RefreshCw className="size-5" />
-                        </motion.div>
-                        Converting...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="size-5" />
-                        Convert Now
-                      </>
-                    )}
-                  </motion.button>
+                          Convert Now
+                        </>
+                      )}
+                    </motion.button>
 
-                  <motion.button
-                    whileHover={{ scale: file && !converting ? 1.02 : 1 }}
-                    whileTap={{ scale: file && !converting ? 0.98 : 1 }}
-                    disabled={!file || converting}
-                    className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
-                      file && !converting
-                        ? 'border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white'
-                        : 'border-white/5 text-slate-500 cursor-not-allowed'
-                    }`}
-                  >
-                    <Download className="size-5" />
-                    Download
-                  </motion.button>
-                </div>
+                    <motion.button
+                      whileHover={{
+                        scale: result || (file && !converting) ? 1.02 : 1,
+                      }}
+                      whileTap={{
+                        scale: result || (file && !converting) ? 0.98 : 1,
+                      }}
+                      onClick={handleDownload}
+                      disabled={!result || converting}
+                      className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
+                        result && !converting
+                          ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white shadow-lg shadow-purple-500/20"
+                          : "border-white/5 text-slate-500 cursor-not-allowed"
+                      }`}
+                    >
+                      <Download className="size-5" />
+                      Download
+                    </motion.button>
+                  </div>
 
                   {/* Share Buttons */}
                   {file && !converting && (
@@ -254,7 +299,12 @@ export default function Convert() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.open('https://wa.me/?text=Check out my file!', '_blank')}
+                          onClick={() =>
+                            window.open(
+                              "https://wa.me/?text=Check out my file!",
+                              "_blank",
+                            )
+                          }
                           className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
                         >
                           <MessageCircle className="size-5" />
@@ -274,7 +324,12 @@ export default function Convert() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => window.open('https://drive.google.com/drive/my-drive', '_blank')}
+                          onClick={() =>
+                            window.open(
+                              "https://drive.google.com/drive/my-drive",
+                              "_blank",
+                            )
+                          }
                           className="flex flex-col items-center gap-2 p-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
                         >
                           <Cloud className="size-5" />
@@ -283,10 +338,9 @@ export default function Convert() {
                       </div>
                     </div>
                   )}
-
+                </div>
               </div>
             </div>
-         </div>
 
             {/* Info Box */}
             <motion.div
@@ -297,7 +351,10 @@ export default function Convert() {
             >
               <p className="text-sm text-blue-200 flex items-start gap-2">
                 <Sparkles className="size-4 mt-0.5 flex-shrink-0" />
-                <span>WebP and AVIF formats offer better compression while maintaining quality</span>
+                <span>
+                  WebP and AVIF formats offer better compression while
+                  maintaining quality
+                </span>
               </p>
             </motion.div>
           </motion.div>

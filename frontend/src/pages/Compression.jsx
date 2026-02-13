@@ -9,10 +9,11 @@ import {
   Mail,
   Cloud,
   ArrowLeftRight,
+  Check,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
 import { ToolShapeDecoration } from "@/components/Shapes";
-import { compressImage, downloadFile } from "@/services/api";
+import { compressImage, downloadFile, getDownloadUrl } from "@/services/api";
 
 export default function Compress() {
   const [file, setFile] = useState(null);
@@ -21,7 +22,6 @@ export default function Compress() {
   const [outputFormat, setOutputFormat] = useState("original");
   const [stripMetadata, setStripMetadata] = useState(true);
   const [converting, setConverting] = useState(false);
-  const [sliderPosition, setSliderPosition] = useState(50);
   const [activePreset, setActivePreset] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -77,6 +77,13 @@ export default function Compress() {
     setResult(null);
 
     try {
+      console.log("=== Frontend Compression Request ===");
+      console.log("Quality:", quality);
+      console.log("Quality type:", typeof quality);
+      console.log("Target size:", targetSize);
+      console.log("Output format:", outputFormat);
+      console.log("Strip metadata:", stripMetadata);
+
       const response = await compressImage(file, {
         quality,
         targetSize,
@@ -84,7 +91,7 @@ export default function Compress() {
         stripMetadata,
       });
 
-      setResult(response.data);
+      setResult(response);
     } catch (err) {
       console.error("Compression error:", err);
       setError(err.response?.data?.message || "Failed to compress image");
@@ -94,8 +101,8 @@ export default function Compress() {
   };
 
   const handleDownload = () => {
-    if (result && result.filename) {
-      downloadFile(result.filename);
+    if (result && (result.data?.filename || result.filename)) {
+      downloadFile(result.data?.filename || result.filename);
     }
   };
 
@@ -110,10 +117,10 @@ export default function Compress() {
 
   const originalSizeKB = file ? (file.size / 1024).toFixed(2) : 0;
   const estimatedSizeKB = result
-    ? parseFloat(result.compressedSize)
-    : getEstimatedSize().toFixed(2);
+    ? parseFloat(result.data?.compressedSize || result.compressedSize)
+    : parseFloat(getEstimatedSize().toFixed(2));
   const savingsPercent = result
-    ? result.savings
+    ? result.data?.savings || result.savings
     : file
       ? ((1 - estimatedSizeKB / originalSizeKB) * 100).toFixed(0)
       : 0;
@@ -170,7 +177,7 @@ export default function Compress() {
               </motion.div>
             )}
 
-            {/* Preview Section with Comparison Slider */}
+            {/* Preview Section */}
             {file && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -179,41 +186,25 @@ export default function Compress() {
               >
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Info className="size-5 text-primary" />
-                    Interactive Preview
+                    {result ? (
+                      <>
+                        <Check className="size-5 text-green-500" />
+                        Compression Result
+                      </>
+                    ) : (
+                      <>
+                        <Info className="size-5 text-primary" />
+                        Image Preview
+                      </>
+                    )}
                   </h3>
-                  <span className="text-xs text-slate-400 flex items-center gap-2">
-                    <ArrowLeftRight className="size-4" />
-                    Drag to compare
-                  </span>
                 </div>
 
-                {/* Comparison Slider Container */}
+                {/* Image Preview Container */}
                 <div className="glass-card rounded-xl overflow-hidden">
-                  {/* Labels */}
-                  <div className="grid grid-cols-2 border-b border-white/5">
-                    <div className="p-4 bg-black/20 flex justify-between items-center">
-                      <span className="text-xs font-bold text-primary tracking-widest uppercase">
-                        Original
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {originalSizeKB} KB
-                      </span>
-                    </div>
-                    <div className="p-4 bg-primary/10 flex justify-between items-center border-l border-white/5">
-                      <span className="text-xs font-bold text-primary tracking-widest uppercase">
-                        Compressed
-                      </span>
-                      <span className="text-xs text-green-400 font-bold">
-                        ~{estimatedSizeKB} KB (-{savingsPercent}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Image Comparison with Slider */}
-                  <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-800">
-                    {/* Original Image (Background) */}
-                    <div className="absolute inset-0">
+                  {!result ? (
+                    /* Before Compression - Show only original image */
+                    <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-800">
                       <img
                         src={URL.createObjectURL(file)}
                         alt="Original"
@@ -223,64 +214,67 @@ export default function Compress() {
                         Original
                       </div>
                     </div>
-
-                    {/* Compressed Image (Clipped) */}
-                    <div
-                      className="absolute inset-0 overflow-hidden"
-                      style={{
-                        clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                      }}
-                    >
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt="Compressed"
-                        className="w-full h-full object-contain"
-                        style={{
-                          filter: `brightness(${0.95 + quality / 1000})`,
-                        }}
-                      />
-                      <div className="absolute top-2 right-2 px-2 py-1 rounded bg-primary/80 text-white text-xs font-bold">
-                        Compressed
+                  ) : (
+                    /* After Compression - Show before/after comparison */
+                    <>
+                      {/* Labels */}
+                      <div className="grid grid-cols-2 border-b border-white/5">
+                        <div className="p-4 bg-black/20 flex justify-between items-center">
+                          <span className="text-xs font-bold text-primary tracking-widest uppercase">
+                            Before
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {originalSizeKB} KB
+                          </span>
+                        </div>
+                        <div className="p-4 bg-primary/10 flex justify-between items-center border-l border-white/5">
+                          <span className="text-xs font-bold text-primary tracking-widest uppercase">
+                            After
+                          </span>
+                          <span className="text-xs text-green-400 font-bold">
+                            {estimatedSizeKB.toFixed(2)} KB (-{savingsPercent})
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Slider Handle */}
-                    <div
-                      className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize z-10"
-                      style={{ left: `${sliderPosition}%` }}
-                      onMouseDown={(e) => {
-                        const handleMouseMove = (moveEvent) => {
-                          const rect =
-                            e.currentTarget.parentElement.getBoundingClientRect();
-                          const x = moveEvent.clientX - rect.left;
-                          const percentage = Math.max(
-                            0,
-                            Math.min(100, (x / rect.width) * 100),
-                          );
-                          setSliderPosition(percentage);
-                        };
+                      {/* Before/After Split View - Single Image */}
+                      <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-800">
+                        {/* Original Image - Full */}
+                        <div className="absolute inset-0">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="Before"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-bold">
+                            Before
+                          </div>
+                        </div>
 
-                        const handleMouseUp = () => {
-                          document.removeEventListener(
-                            "mousemove",
-                            handleMouseMove,
-                          );
-                          document.removeEventListener(
-                            "mouseup",
-                            handleMouseUp,
-                          );
-                        };
+                        {/* Compressed Image - Right Half Only */}
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            clipPath: "inset(0 0 0 50%)",
+                          }}
+                        >
+                          <img
+                            src={getDownloadUrl(
+                              result.data?.filename || result.filename,
+                            )}
+                            alt="After"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute top-2 right-2 px-2 py-1 rounded bg-primary/80 text-white text-xs font-bold">
+                            After
+                          </div>
+                        </div>
 
-                        document.addEventListener("mousemove", handleMouseMove);
-                        document.addEventListener("mouseup", handleMouseUp);
-                      }}
-                    >
-                      {/* Handle Circle */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center">
-                        <ArrowLeftRight className="size-5 text-primary" />
+                        {/* Vertical Divider Line */}
+                        <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white shadow-lg z-10" />
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 {/* File Size Comparison Chart */}
@@ -308,7 +302,7 @@ export default function Compress() {
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-slate-400">Compressed</span>
                         <span className="font-bold text-green-400">
-                          {estimatedSizeKB} KB
+                          {estimatedSizeKB.toFixed(2)} KB
                         </span>
                       </div>
                       <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
@@ -332,7 +326,11 @@ export default function Compress() {
                           {savingsPercent}%
                         </span>
                         <span className="text-sm text-slate-400">
-                          ({(originalSizeKB - estimatedSizeKB).toFixed(2)} KB)
+                          (
+                          {(
+                            parseFloat(originalSizeKB) - estimatedSizeKB
+                          ).toFixed(2)}{" "}
+                          KB)
                         </span>
                       </div>
                     </div>
@@ -384,26 +382,27 @@ export default function Compress() {
                 <h2 className="text-xl font-bold">Compression Settings</h2>
               </div>
 
-              {/* Output Format Selection */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-slate-400">
-                  Output Format
-                </label>
-                <select
-                  value={outputFormat}
-                  onChange={(e) => setOutputFormat(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                >
-                  {formatOptions.map((format) => (
-                    <option key={format.value} value={format.value}>
-                      {format.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-500">
-                  Choose the format for your compressed image
-                </p>
-              </div>
+              {/* Output Format - HIDDEN: Always use original format for better quality control */}
+              {false && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-400">
+                    Output Format
+                  </label>
+                  <select
+                    value={outputFormat}
+                    onChange={(e) => setOutputFormat(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  >
+                    <option value="original">Keep Original</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                  </select>
+                  <p className="text-xs text-slate-500">
+                    Choose the format for your compressed image
+                  </p>
+                </div>
+              )}
 
               {/* Compression Presets */}
               <div className="space-y-3 pt-4 border-t border-white/5">
@@ -446,12 +445,12 @@ export default function Compress() {
                 </p>
               </div>
 
-              {/* Quality Slider (shown when no target size) */}
+              {/* Compression Level Slider (shown when no target size) */}
               {!targetSize && (
                 <div className="space-y-4 pt-4 border-t border-white/5">
                   <div className="flex justify-between items-center">
                     <label className="text-sm font-medium text-slate-400">
-                      Quality Level
+                      Compression Level
                     </label>
                     <span className="text-primary font-bold text-lg">
                       {quality}%
@@ -459,8 +458,8 @@ export default function Compress() {
                   </div>
                   <input
                     type="range"
-                    min="1"
-                    max="100"
+                    min="10"
+                    max="95"
                     value={quality}
                     onChange={(e) => {
                       setQuality(parseInt(e.target.value));
@@ -469,9 +468,12 @@ export default function Compress() {
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    <span>Small Size</span>
-                    <span>High Quality</span>
+                    <span>Maximum Compression</span>
+                    <span>Minimum Compression</span>
                   </div>
+                  <p className="text-xs text-slate-500">
+                    {quality}% = Compress to {quality}% of original file size
+                  </p>
                 </div>
               )}
 

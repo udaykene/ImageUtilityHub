@@ -38,6 +38,7 @@ const convertImage = async (req, res) => {
     if (format === "jpg") format = "jpeg";
 
     const outputFilename = generateUniqueFilename(
+      outputsDir,
       req.file.originalname,
       `.${format}`
     );
