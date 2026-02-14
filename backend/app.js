@@ -54,7 +54,7 @@ const cleanupInterval = setInterval(
               if (err) return;
 
               if (Date.now() - stats.mtimeMs > maxAge) {
-                fs.unlink(filePath, (err) => {
+                fs.rm(filePath, { recursive: true, force: true }, (err) => {
                   if (err) console.error(`Error deleting ${filePath}:`, err);
                 });
               }

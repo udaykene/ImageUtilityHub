@@ -231,7 +231,15 @@ export default function Extract() {
                       }`}
                     >
                       <div className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 mb-3 flex items-center justify-center overflow-hidden">
-                        <FileImage className="size-10 text-slate-300 group-hover:scale-110 transition-transform" />
+                        {img.url ? (
+                          <img
+                            src={`${import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000"}${img.url}`}
+                            alt={img.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <FileImage className="size-10 text-slate-300 group-hover:scale-110 transition-transform" />
+                        )}
                       </div>
                       <p className="text-[10px] font-black truncate">
                         {img.name}

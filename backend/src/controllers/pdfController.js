@@ -52,21 +52,57 @@ const extractImagesFromPDF = async (req, res) => {
           object instanceof PDFRawStream &&
           object.dict.get(PDFName.of("Subtype")) === PDFName.of("Image")
         ) {
-          const filter = object.dict.get(PDFName.of("Filter"));
-          const isJpg =
-            filter === PDFName.of("DCTDecode") ||
-            (Array.isArray(filter) &&
-              filter.some((f) => f === PDFName.of("DCTDecode")));
+          try {
+            // 1. Decode the stream content if it's encoded (e.g. FlateDecode)
+            let decodedBuffer;
+            try {
+              // PDFRawStream.decode() handles most filters including FlateDecode
+              decodedBuffer = object.decode();
+            } catch (decodeError) {
+              console.warn(
+                `Could not decode stream on page ${i + 1}:`,
+                decodeError.message
+              );
+              decodedBuffer = object.contents; // Fallback to raw contents
+            }
 
-          const extension = isJpg ? ".jpg" : ".png";
-          const imgFilename = `page_${i + 1}_img_${++imageCount}${extension}`;
-          const imgPath = path.join(tempExtractDir, imgFilename);
+            if (!decodedBuffer || decodedBuffer.length === 0) continue;
 
-          fs.writeFileSync(imgPath, object.contents);
-          extractedFiles.push({
-            name: imgFilename,
-            size: formatFileSize(object.contents.length),
-          });
+            // 2. Determine the best way to process with sharp
+            const filter = object.dict.get(PDFName.of("Filter"));
+            const isJpg =
+              filter === PDFName.of("DCTDecode") ||
+              (Array.isArray(filter) &&
+                filter.some((f) => String(f) === "/DCTDecode"));
+
+            const extension = isJpg ? ".jpg" : ".png";
+            const imgFilename = `page_${i + 1}_img_${++imageCount}${extension}`;
+            const imgPath = path.join(tempExtractDir, imgFilename);
+
+            let processedBuffer;
+            try {
+              // Try to let sharp handle the decoded buffer
+              // For FlateDecode images, we might need to specify raw metadata if it's not a full PNG
+              // but many PDFs embed full JPEGs as DCTDecode which sharp handles perfectly.
+              processedBuffer = await sharp(decodedBuffer)
+                .toFormat(isJpg ? "jpeg" : "png")
+                .toBuffer();
+            } catch (sharpError) {
+              console.warn(
+                `Sharp processing failed for ${imgFilename}, using raw decoded buffer:`,
+                sharpError.message
+              );
+              processedBuffer = decodedBuffer;
+            }
+
+            fs.writeFileSync(imgPath, processedBuffer);
+            extractedFiles.push({
+              name: imgFilename,
+              size: formatFileSize(processedBuffer.length),
+            });
+          } catch (itemError) {
+            console.error(`Error processing image in PDF:`, itemError);
+          }
         }
       }
     }
@@ -102,9 +138,7 @@ const extractImagesFromPDF = async (req, res) => {
     await archive.finalize();
     await finishArchive;
 
-    // Cleanup
-    if (fs.existsSync(tempExtractDir))
-      fs.rmSync(tempExtractDir, { recursive: true, force: true });
+    // Cleanup input file only (keep extraction dir for previews)
     if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
 
     res.json({
@@ -113,7 +147,10 @@ const extractImagesFromPDF = async (req, res) => {
       data: {
         filename: zipFilename,
         imageCount: imageCount,
-        images: extractedFiles,
+        images: extractedFiles.map((f) => ({
+          ...f,
+          url: `/outputs/${extractionId}/${f.name}`,
+        })),
         downloadUrl: `/api/download/${zipFilename}`,
       },
     });
