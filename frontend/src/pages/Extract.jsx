@@ -1,14 +1,23 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FileImage, Download, CheckSquare, Package, MessageCircle, Mail, Cloud } from 'lucide-react';
-import FileUpload from '@/components/FileUpload';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FileImage,
+  Download,
+  CheckSquare,
+  Package,
+  MessageCircle,
+  Mail,
+  Cloud,
+} from "lucide-react";
+import FileUpload from "@/components/FileUpload";
+import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
 
 // Mock extracted images
 const mockImages = [
-  { id: 1, name: 'IMAGE_001.JPG', size: '1.2 MB', dimensions: '1920 x 1080' },
-  { id: 2, name: 'IMAGE_002.PNG', size: '3.5 MB', dimensions: '2400 x 2400' },
-  { id: 3, name: 'IMAGE_003.JPG', size: '0.8 MB', dimensions: '1280 x 720' },
-  { id: 4, name: 'IMAGE_004.JPG', size: '5.2 MB', dimensions: '4000 x 3000' },
+  { id: 1, name: "IMAGE_001.JPG", size: "1.2 MB", dimensions: "1920 x 1080" },
+  { id: 2, name: "IMAGE_002.PNG", size: "3.5 MB", dimensions: "2400 x 2400" },
+  { id: 3, name: "IMAGE_003.JPG", size: "0.8 MB", dimensions: "1280 x 720" },
+  { id: 4, name: "IMAGE_004.JPG", size: "5.2 MB", dimensions: "4000 x 3000" },
 ];
 
 export default function Extract() {
@@ -45,7 +54,7 @@ export default function Extract() {
 
   const toggleImageSelection = (id) => {
     setSelectedImages((prev) =>
-      prev.includes(id) ? prev.filter((img) => img !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((img) => img !== id) : [...prev, id],
     );
   };
 
@@ -66,10 +75,13 @@ export default function Extract() {
             <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white">
               <FileImage className="size-6" />
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">PDF Image Extraction</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
+              PDF Image Extraction
+            </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl">
-            Extract all embedded images from PDF documents in their original resolution and quality.
+            Extract all embedded images from PDF documents in their original
+            resolution and quality.
           </p>
         </motion.div>
 
@@ -103,7 +115,11 @@ export default function Extract() {
                   {extracting ? (
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                     >
                       <FileImage className="size-6 text-primary" />
                     </motion.div>
@@ -111,7 +127,7 @@ export default function Extract() {
                     <FileImage className="size-6 text-primary" />
                   )}
                   <p className="font-medium">
-                    {extracting ? 'Extracting images...' : 'Ready to extract'}
+                    {extracting ? "Extracting images..." : "Ready to extract"}
                   </p>
                 </div>
                 <p className="text-primary text-sm font-bold">{progress}%</p>
@@ -126,11 +142,13 @@ export default function Extract() {
               </div>
 
               <div className="flex justify-between items-center text-sm">
-                <p className="text-slate-500 dark:text-slate-400">Processing '{file.name}'</p>
+                <p className="text-slate-500 dark:text-slate-400">
+                  Processing '{file.name}'
+                </p>
                 {extracting && (
                   <p className="text-slate-400 text-xs italic">
-                    {Math.floor((progress / 100) * mockImages.length)} of {mockImages.length} images
-                    found
+                    {Math.floor((progress / 100) * mockImages.length)} of{" "}
+                    {mockImages.length} images found
                   </p>
                 )}
               </div>
@@ -162,7 +180,9 @@ export default function Extract() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h3 className="text-2xl font-bold">Extracted Images</h3>
-                  <p className="text-slate-400 text-sm">Found {mockImages.length} images</p>
+                  <p className="text-slate-400 text-sm">
+                    Found {mockImages.length} images
+                  </p>
                 </div>
 
                 <div className="flex gap-3 w-full sm:w-auto">
@@ -185,45 +205,60 @@ export default function Extract() {
                     Download ZIP
                   </motion.button>
 
-                  {/* Share Buttons */}
-                  {extracted && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 mt-4"
+                  <div className="flex flex-col gap-3 mt-4 sm:mt-0 min-w-[200px]">
+                    <div className="grid grid-cols-2 gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() =>
+                          shareToWhatsApp(
+                            "extracted_images.zip",
+                            "Extracted Images ZIP",
+                            "application/zip",
+                          )
+                        }
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
+                      >
+                        <MessageCircle className="size-4" />
+                        <span className="text-[10px] font-bold">Share</span>
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() =>
+                          shareByEmail(
+                            "extracted_images.zip",
+                            "Extracted Images ZIP",
+                            "application/zip",
+                          )
+                        }
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
+                      >
+                        <Mail className="size-4" />
+                        <span className="text-[10px] font-bold">Email</span>
+                      </motion.button>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() =>
+                        shareToDrive("extracted_images.zip", "application/zip")
+                      }
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
                     >
-                      <span className="text-xs text-slate-400 font-medium">Share:</span>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => window.open('https://wa.me/?text=Check out my extracted images!', '_blank')}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors"
-                      >
-                        <MessageCircle className="size-3.5" />
-                        WhatsApp
-                      </motion.button>
+                      <Cloud className="size-4" />
+                      <span className="text-[10px] font-bold">
+                        Add to Google Drive
+                      </span>
+                    </motion.button>
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => window.location.href = 'mailto:?subject=Extracted Images&body=Here are the images'}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
-                      >
-                        <Mail className="size-3.5" />
-                        Email
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => window.open('https://drive.google.com/drive/my-drive', '_blank')}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium transition-colors"
-                      >
-                        <Cloud className="size-3.5" />
-                        Drive
-                      </motion.button>
-                    </motion.div>
-                  )}
+                    <p className="text-[10px] text-center text-slate-500 italic mt-2">
+                      Tip: On Desktop, you can drag your extracted ZIP directly
+                      into WhatsApp or Drive without a separate download step!
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -237,8 +272,8 @@ export default function Extract() {
                     transition={{ delay: index * 0.1 }}
                     className={`glass-card rounded-xl overflow-hidden cursor-pointer transition-all ${
                       selectedImages.includes(image.id)
-                        ? 'ring-2 ring-primary'
-                        : 'hover:border-primary/50'
+                        ? "ring-2 ring-primary"
+                        : "hover:border-primary/50"
                     }`}
                     onClick={() => toggleImageSelection(image.id)}
                   >
@@ -250,7 +285,9 @@ export default function Extract() {
                     {/* Info */}
                     <div className="p-3 flex justify-between items-center">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-primary truncate">{image.name}</p>
+                        <p className="text-xs font-bold text-primary truncate">
+                          {image.name}
+                        </p>
                         <p className="text-[10px] text-slate-400">
                           {image.dimensions} • {image.size}
                         </p>
@@ -294,7 +331,10 @@ export default function Extract() {
         >
           <div className="flex items-center justify-center gap-2 text-slate-400 text-sm mb-4">
             <FileImage className="size-4" />
-            <p>Privacy First: All processing happens in your browser. Files never leave your device.</p>
+            <p>
+              Privacy First: All processing happens in your browser. Files never
+              leave your device.
+            </p>
           </div>
         </motion.div>
       </div>

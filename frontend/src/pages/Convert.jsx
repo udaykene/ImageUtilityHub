@@ -11,7 +11,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
-import { convertImage, downloadFile } from "@/services/api";
+import { convertImage, downloadFile, getDownloadUrl } from "@/services/api";
+import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
 
 const formats = [
   {
@@ -36,31 +37,7 @@ const formats = [
   },
 ];
 
-
 export default function Convert() {
-  // Email share handler
-  const handleEmailShare = () => {
-    try {
-      const subject = "Check out my converted image!";
-      const body =
-        "I wanted to share this converted image with you.\n\nCreated with FormatFlow.";
-      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-      // Create and click a temporary link
-      const a = document.createElement("a");
-      a.href = mailtoLink;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      // Fallback: Show alert
-      alert(
-        "Please open your email client and compose a new email to share your file.\n\nSubject: Check out my converted image!",
-      );
-    }
-  };
-
   const [file, setFile] = useState(null);
   const [targetFormat, setTargetFormat] = useState("webp");
   const [converting, setConverting] = useState(false);
@@ -290,52 +267,55 @@ export default function Convert() {
                   </div>
 
                   {/* Share Buttons */}
-                  {file && !converting && (
-                    <div className="pt-4 border-t border-white/5">
-                      <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
-                        Share Result
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
+                  {result && !converting && (
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() =>
-                            window.open(
-                              "https://wa.me/?text=Check out my file!",
-                              "_blank",
+                            shareToWhatsApp(
+                              result.filename,
+                              "Check out my converted image!",
                             )
                           }
-                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
                         >
                           <MessageCircle className="size-5" />
-                          <span className="text-xs font-medium">WhatsApp</span>
+                          <span className="text-xs font-bold">
+                            WhatsApp / Share
+                          </span>
                         </motion.button>
 
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleEmailShare}
-                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() =>
+                            shareByEmail(result.filename, "My Converted Image")
+                          }
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
                         >
                           <Mail className="size-5" />
-                          <span className="text-xs font-medium">Email</span>
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() =>
-                            window.open(
-                              "https://drive.google.com/drive/my-drive",
-                              "_blank",
-                            )
-                          }
-                          className="flex flex-col items-center gap-2 p-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
-                        >
-                          <Cloud className="size-5" />
-                          <span className="text-xs font-medium">Drive</span>
+                          <span className="text-xs font-bold">Email</span>
                         </motion.button>
                       </div>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => shareToDrive(result.filename)}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
+                      >
+                        <Cloud className="size-5" />
+                        <span className="text-sm font-bold">
+                          Add to Google Drive
+                        </span>
+                      </motion.button>
+
+                      <p className="text-[10px] text-center text-slate-500 italic">
+                        Tip: On Desktop, images are copied to your clipboard
+                        automatically. Just Paste (Ctrl+V) to share!
+                      </p>
                     </div>
                   )}
                 </div>
