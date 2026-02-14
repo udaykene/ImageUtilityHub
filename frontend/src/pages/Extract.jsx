@@ -8,58 +8,63 @@ import {
   MessageCircle,
   Mail,
   Cloud,
+  RefreshCcw,
+  FileCheck,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
 import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
-
-// Mock extracted images
-const mockImages = [
-  { id: 1, name: "IMAGE_001.JPG", size: "1.2 MB", dimensions: "1920 x 1080" },
-  { id: 2, name: "IMAGE_002.PNG", size: "3.5 MB", dimensions: "2400 x 2400" },
-  { id: 3, name: "IMAGE_003.JPG", size: "0.8 MB", dimensions: "1280 x 720" },
-  { id: 4, name: "IMAGE_004.JPG", size: "5.2 MB", dimensions: "4000 x 3000" },
-];
+import { extractImagesFromPDF, downloadFile } from "@/services/api";
 
 export default function Extract() {
   const [file, setFile] = useState(null);
   const [extracting, setExtracting] = useState(false);
-  const [extracted, setExtracted] = useState(false);
+  const [result, setResult] = useState(null);
   const [progress, setProgress] = useState(0);
   const [selectedImages, setSelectedImages] = useState([]);
 
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
-    setExtracted(false);
+    setResult(null);
     setProgress(0);
+    setSelectedImages([]);
   };
 
-  const handleExtract = () => {
+  const handleExtract = async () => {
     if (!file) return;
     setExtracting(true);
-    setProgress(0);
+    setProgress(40);
 
-    // Simulate extraction progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setExtracting(false);
-          setExtracted(true);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
+    try {
+      const data = await extractImagesFromPDF(file);
+      setProgress(100);
+      setResult(data.data);
+    } catch (error) {
+      console.error("Extraction failed:", error);
+      alert("Failed to extract images. Please try again with a different PDF.");
+    } finally {
+      setExtracting(false);
+    }
   };
 
-  const toggleImageSelection = (id) => {
+  const toggleImageSelection = (name) => {
     setSelectedImages((prev) =>
-      prev.includes(id) ? prev.filter((img) => img !== id) : [...prev, id],
+      prev.includes(name)
+        ? prev.filter((img) => img !== name)
+        : [...prev, name],
     );
   };
 
   const selectAll = () => {
-    setSelectedImages(mockImages.map((img) => img.id));
+    if (result?.images) {
+      setSelectedImages(result.images.map((img) => img.name));
+    }
+  };
+
+  const reset = () => {
+    setFile(null);
+    setResult(null);
+    setProgress(0);
+    setSelectedImages([]);
   };
 
   return (
@@ -69,10 +74,10 @@ export default function Extract() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 sm:mb-12"
+          className="mb-8"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20">
               <FileImage className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
@@ -85,258 +90,248 @@ export default function Extract() {
           </p>
         </motion.div>
 
-        {/* Upload Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
-        >
-          <FileUpload
-            accept="application/pdf"
-            maxSize={50}
-            onFileSelect={handleFileSelect}
-            title="Drag & drop PDF here"
-            subtitle="Maximum file size: 50MB"
-          />
-        </motion.div>
-
-        {/* Progress Bar */}
-        <AnimatePresence>
-          {file && !extracted && (
+        {!result ? (
+          <>
+            {/* Upload Area */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="glass-card rounded-2xl p-6 mb-8"
+              transition={{ delay: 0.2 }}
+              className="mb-8"
             >
-              <div className="flex gap-6 justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                  {extracting ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    >
-                      <FileImage className="size-6 text-primary" />
-                    </motion.div>
-                  ) : (
-                    <FileImage className="size-6 text-primary" />
-                  )}
-                  <p className="font-medium">
-                    {extracting ? "Extracting images..." : "Ready to extract"}
-                  </p>
-                </div>
-                <p className="text-primary text-sm font-bold">{progress}%</p>
-              </div>
-
-              <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mb-4">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full rounded-full bg-primary"
-                />
-              </div>
-
-              <div className="flex justify-between items-center text-sm">
-                <p className="text-slate-500 dark:text-slate-400">
-                  Processing '{file.name}'
-                </p>
-                {extracting && (
-                  <p className="text-slate-400 text-xs italic">
-                    {Math.floor((progress / 100) * mockImages.length)} of{" "}
-                    {mockImages.length} images found
-                  </p>
-                )}
-              </div>
-
-              {!extracting && !extracted && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleExtract}
-                  className="mt-6 w-full btn-primary justify-center py-4"
-                >
-                  <FileImage className="size-5" />
-                  Start Extraction
-                </motion.button>
-              )}
+              <FileUpload
+                accept="application/pdf"
+                maxSize={50}
+                onFileSelect={handleFileSelect}
+                title="Drag & drop PDF here"
+                subtitle="Maximum file size: 50MB"
+                className={file ? "opacity-50 pointer-events-none" : ""}
+              />
             </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Results Section */}
-        <AnimatePresence>
-          {extracted && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              {/* Header with Actions */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold">Extracted Images</h3>
-                  <p className="text-slate-400 text-sm">
-                    Found {mockImages.length} images
-                  </p>
-                </div>
+            {/* Preparation/Progress Stage */}
+            <AnimatePresence>
+              {file && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="glass-card rounded-2xl p-6 mb-8 border-primary/20"
+                >
+                  <div className="flex gap-6 justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        {extracting ? (
+                          <RefreshCcw className="size-5 animate-spin" />
+                        ) : (
+                          <FileCheck className="size-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white">
+                          {extracting ? "Extracting..." : "Ready to extract"}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate max-w-[200px]">
+                          {file.name}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-primary font-black">{progress}%</p>
+                  </div>
 
-                <div className="flex gap-3 w-full sm:w-auto">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mb-6">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      className="h-full bg-primary"
+                    />
+                  </div>
+
+                  {!extracting && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={reset}
+                        className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 font-bold transition-all text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleExtract}
+                        className="flex-[2] py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Package className="size-5" />
+                        Start Extraction
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-8"
+          >
+            {/* Success Summary */}
+            <div className="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6 border-green-500/20">
+              <div className="size-16 sm:size-20 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500">
+                <FileImage className="size-8 sm:size-10" />
+              </div>
+              <div className="flex-1 text-center md:text-left">
+                <h2 className="text-xl sm:text-2xl font-black mb-1">
+                  Extraction Complete!
+                </h2>
+                <p className="text-slate-500">
+                  Successfully extracted <b>{result.imageCount}</b> images from
+                  your PDF.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <button
+                  onClick={reset}
+                  className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <RefreshCcw className="size-4" />
+                  New Project
+                </button>
+                <button
+                  onClick={() => downloadFile(result.filename)}
+                  className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="size-5" />
+                  Download ZIP
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Image Grid */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="font-bold text-lg">Extracted Files</h3>
+                  <button
                     onClick={selectAll}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-sm font-medium"
+                    className="text-primary text-sm font-bold hover:underline"
                   >
-                    <CheckSquare className="size-4" />
                     Select All
-                  </motion.button>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {result.images.map((img, idx) => (
+                    <motion.div
+                      key={idx}
+                      whileHover={{ y: -4 }}
+                      onClick={() => toggleImageSelection(img.name)}
+                      className={`group relative glass-card rounded-2xl p-3 cursor-pointer transition-all border-2 ${
+                        selectedImages.includes(img.name)
+                          ? "border-primary bg-primary/5"
+                          : "border-transparent hover:border-white/10"
+                      }`}
+                    >
+                      <div className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 mb-3 flex items-center justify-center overflow-hidden">
+                        <FileImage className="size-10 text-slate-300 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <p className="text-[10px] font-black truncate">
+                        {img.name}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{img.size}</p>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20"
-                  >
-                    <Package className="size-4" />
-                    Download ZIP
-                  </motion.button>
+                      {selectedImages.includes(img.name) && (
+                        <div className="absolute top-2 right-2 p-1 bg-primary rounded-full text-white shadow-md">
+                          <CheckSquare className="size-3" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
 
-                  <div className="flex flex-col gap-3 mt-4 sm:mt-0 min-w-[200px]">
-                    <div className="grid grid-cols-2 gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+              {/* Sidebar Actions */}
+              <div className="space-y-6">
+                <div className="glass-card rounded-3xl p-6 sticky top-24">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <MessageCircle className="size-5 text-primary" />
+                    Share ZIP Package
+                  </h3>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
                         onClick={() =>
                           shareToWhatsApp(
-                            "extracted_images.zip",
-                            "Extracted Images ZIP",
+                            result.filename,
+                            "PDF Images",
                             "application/zip",
                           )
                         }
-                        className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
+                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-green-600/10 hover:bg-green-600/20 text-green-600 transition-all border border-green-600/10"
                       >
-                        <MessageCircle className="size-4" />
-                        <span className="text-[10px] font-bold">Share</span>
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        <MessageCircle className="size-6" />
+                        <span className="text-[10px] font-black uppercase">
+                          WhatsApp
+                        </span>
+                      </button>
+                      <button
                         onClick={() =>
                           shareByEmail(
-                            "extracted_images.zip",
-                            "Extracted Images ZIP",
+                            result.filename,
+                            "Extracted PDF Images",
                             "application/zip",
                           )
                         }
-                        className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
+                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 text-red-600 transition-all border border-red-600/10"
                       >
-                        <Mail className="size-4" />
-                        <span className="text-[10px] font-bold">Email</span>
-                      </motion.button>
+                        <Mail className="size-6" />
+                        <span className="text-[10px] font-black uppercase">
+                          Email
+                        </span>
+                      </button>
                     </div>
 
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                    <button
                       onClick={() =>
-                        shareToDrive("extracted_images.zip", "application/zip")
+                        shareToDrive(result.filename, "application/zip")
                       }
-                      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-all border border-yellow-500/10"
                     >
-                      <Cloud className="size-4" />
-                      <span className="text-[10px] font-bold">
-                        Add to Google Drive
+                      <Cloud className="size-5" />
+                      <span className="text-xs font-black uppercase tracking-wider">
+                        Save to Google Drive
                       </span>
-                    </motion.button>
+                    </button>
 
-                    <p className="text-[10px] text-center text-slate-500 italic mt-2">
-                      Tip: On Desktop, you can drag your extracted ZIP directly
-                      into WhatsApp or Drive without a separate download step!
-                    </p>
+                    <div className="pt-4 mt-4 border-t border-white/5">
+                      <p className="text-[10px] text-slate-500 italic text-center leading-relaxed">
+                        Tip: You can also drag the ZIP file directly into your
+                        apps after downloading it.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Image Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {mockImages.map((image, index) => (
-                  <motion.div
-                    key={image.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`glass-card rounded-xl overflow-hidden cursor-pointer transition-all ${
-                      selectedImages.includes(image.id)
-                        ? "ring-2 ring-primary"
-                        : "hover:border-primary/50"
-                    }`}
-                    onClick={() => toggleImageSelection(image.id)}
-                  >
-                    {/* Image Preview */}
-                    <div className="aspect-square bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                      <FileImage className="size-16 text-slate-400" />
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-3 flex justify-between items-center">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-primary truncate">
-                          {image.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          {image.dimensions} • {image.size}
-                        </p>
-                      </div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className="ml-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white transition-colors"
-                      >
-                        <Download className="size-4" />
-                      </motion.button>
-                    </div>
-
-                    {/* Selection Indicator */}
-                    {selectedImages.includes(image.id) && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-2 left-2 size-6 bg-primary rounded-full flex items-center justify-center text-white"
-                      >
-                        <CheckSquare className="size-4" />
-                      </motion.div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
 
         {/* Info Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-sm mb-4">
-            <FileImage className="size-4" />
-            <p>
-              Privacy First: All processing happens in your browser. Files never
-              leave your device.
-            </p>
-          </div>
-        </motion.div>
+        {!result && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-12 text-center"
+          >
+            <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+              <FileImage className="size-4" />
+              <p>
+                Secure Image Extraction: Only embedded image streams are
+                extracted. Original resolution preserved.
+              </p>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

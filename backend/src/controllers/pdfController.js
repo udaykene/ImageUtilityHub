@@ -1,7 +1,7 @@
 const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
-const { PDFDocument } = require("pdf-lib");
+const { PDFDocument, PDFName, PDFRawStream } = require("pdf-lib");
 const pdfParse = require("pdf-parse");
 const {
   generateUniqueFilename,
@@ -11,6 +11,8 @@ const {
 
 const outputsDir = path.join(__dirname, "../../outputs");
 ensureDirectoryExists(outputsDir);
+
+const archiver = require("archiver");
 
 /**
  * Extract images from PDF
@@ -23,48 +25,104 @@ const extractImagesFromPDF = async (req, res) => {
         .json({ success: false, message: "No PDF file uploaded" });
     }
 
-    if (req.file.mimetype !== "application/pdf") {
-      return res
-        .status(400)
-        .json({ success: false, message: "File must be a PDF" });
-    }
-
     const inputPath = req.file.path;
     const dataBuffer = fs.readFileSync(inputPath);
-
-    // Parse PDF
-    const pdfData = await pdfParse(dataBuffer);
     const pdfDoc = await PDFDocument.load(dataBuffer);
-
     const pages = pdfDoc.getPages();
-    const extractedImages = [];
 
-    // Note: pdf-parse doesn't directly extract images, we need a different approach
-    // For now, we'll use a placeholder response
-    // In production, you might want to use pdf2pic or similar library
+    // Create a truly unique extraction directory
+    const extractionId = `extract_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const tempExtractDir = path.join(outputsDir, extractionId);
+    ensureDirectoryExists(tempExtractDir);
 
-    // Clean up input file
-    fs.unlinkSync(inputPath);
+    const extractedFiles = [];
+    let imageCount = 0;
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      const resources = page.node.get(PDFName.of("Resources"));
+      if (!resources) continue;
+
+      const xObjects = resources.get(PDFName.of("XObject"));
+      if (!xObjects || !xObjects.dict) continue;
+
+      for (const [name, ref] of xObjects.entries()) {
+        const object = pdfDoc.context.lookup(ref);
+        if (
+          object instanceof PDFRawStream &&
+          object.dict.get(PDFName.of("Subtype")) === PDFName.of("Image")
+        ) {
+          const filter = object.dict.get(PDFName.of("Filter"));
+          const isJpg =
+            filter === PDFName.of("DCTDecode") ||
+            (Array.isArray(filter) &&
+              filter.some((f) => f === PDFName.of("DCTDecode")));
+
+          const extension = isJpg ? ".jpg" : ".png";
+          const imgFilename = `page_${i + 1}_img_${++imageCount}${extension}`;
+          const imgPath = path.join(tempExtractDir, imgFilename);
+
+          fs.writeFileSync(imgPath, object.contents);
+          extractedFiles.push({
+            name: imgFilename,
+            size: formatFileSize(object.contents.length),
+          });
+        }
+      }
+    }
+
+    if (extractedFiles.length === 0) {
+      if (fs.existsSync(tempExtractDir))
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+      return res.status(404).json({
+        success: false,
+        message:
+          "No images found in the uploaded PDF. Ensure the PDF contains actual image objects.",
+      });
+    }
+
+    // Create ZIP
+    const zipFilename = `extracted_images_${Date.now()}.zip`;
+    const zipPath = path.join(outputsDir, zipFilename);
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    // Wrap finishing logic in a promise
+    const finishArchive = new Promise((resolve, reject) => {
+      output.on("close", resolve);
+      archive.on("error", reject);
+    });
+
+    archive.pipe(output);
+    const dirFiles = fs.readdirSync(tempExtractDir);
+    dirFiles.forEach((file) => {
+      archive.file(path.join(tempExtractDir, file), { name: file });
+    });
+    await archive.finalize();
+    await finishArchive;
+
+    // Cleanup
+    if (fs.existsSync(tempExtractDir))
+      fs.rmSync(tempExtractDir, { recursive: true, force: true });
+    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
 
     res.json({
       success: true,
-      message: "PDF processed (image extraction requires additional setup)",
+      message: `Extracted ${imageCount} images successfully`,
       data: {
-        pageCount: pages.length,
-        extractedImages: extractedImages,
-        note: "Full image extraction requires pdf2pic or similar library",
+        filename: zipFilename,
+        imageCount: imageCount,
+        images: extractedFiles,
+        downloadUrl: `/api/download/${zipFilename}`,
       },
     });
   } catch (error) {
     console.error("PDF extraction error:", error);
-
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({
       success: false,
-      message: "Error extracting images from PDF",
+      message: "Error extracting images",
       error: error.message,
     });
   }
