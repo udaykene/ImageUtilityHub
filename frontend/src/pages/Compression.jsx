@@ -47,14 +47,6 @@ export default function Compress() {
     },
   ];
 
-  const formatOptions = [
-    { value: "original", label: "Keep Original Format" },
-    { value: "jpg", label: "JPG" },
-    { value: "png", label: "PNG" },
-    { value: "webp", label: "WebP" },
-    { value: "avif", label: "AVIF" },
-  ];
-
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
   };
@@ -62,12 +54,12 @@ export default function Compress() {
   const handlePresetClick = (preset) => {
     setQuality(preset.quality);
     setActivePreset(preset.id);
-    setTargetSize(""); // Clear target size when preset is selected
+    setTargetSize("");
   };
 
   const handleTargetSizeChange = (e) => {
     setTargetSize(e.target.value);
-    setActivePreset(null); // Clear active preset when custom size is entered
+    setActivePreset(null);
   };
 
   const handleCompress = async () => {
@@ -77,23 +69,14 @@ export default function Compress() {
     setResult(null);
 
     try {
-      console.log("=== Frontend Compression Request ===");
-      console.log("Quality:", quality);
-      console.log("Quality type:", typeof quality);
-      console.log("Target size:", targetSize);
-      console.log("Output format:", outputFormat);
-      console.log("Strip metadata:", stripMetadata);
-
       const response = await compressImage(file, {
         quality,
         targetSize,
         outputFormat,
         stripMetadata,
       });
-
       setResult(response);
     } catch (err) {
-      console.error("Compression error:", err);
       setError(err.response?.data?.message || "Failed to compress image");
     } finally {
       setConverting(false);
@@ -106,13 +89,10 @@ export default function Compress() {
     }
   };
 
-  // Calculate estimated compressed size
   const getEstimatedSize = () => {
     if (!file) return 0;
-    if (targetSize) {
-      return parseFloat(targetSize);
-    }
-    return (file.size * (quality / 100)) / 1024; // in KB
+    if (targetSize) return parseFloat(targetSize);
+    return (file.size * (quality / 100)) / 1024;
   };
 
   const originalSizeKB = file ? (file.size / 1024).toFixed(2) : 0;
@@ -150,6 +130,7 @@ export default function Compress() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+          
           {/* Left Column - Upload & Preview */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -157,7 +138,6 @@ export default function Compress() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-8 flex flex-col gap-6"
           >
-            {/* Upload Area */}
             <FileUpload
               accept="image/*"
               maxSize={20}
@@ -166,206 +146,59 @@ export default function Compress() {
               subtitle="Supports JPG, PNG, and WebP up to 20MB"
             />
 
-            {/* Error Message */}
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-xl p-4 border-2 border-red-500/50 bg-red-500/10"
-              >
+              <div className="glass-card rounded-xl p-4 border-2 border-red-500/50 bg-red-500/10">
                 <p className="text-red-500 font-medium">{error}</p>
-              </motion.div>
+              </div>
             )}
 
-            {/* Preview Section */}
             {file && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold flex items-center gap-2">
                     {result ? (
-                      <>
-                        <Check className="size-5 text-green-500" />
-                        Compression Result
-                      </>
+                      <><Check className="size-5 text-green-500" /> Compression Result</>
                     ) : (
-                      <>
-                        <Info className="size-5 text-primary" />
-                        Image Preview
-                      </>
+                      <><Info className="size-5 text-primary" /> Image Preview</>
                     )}
                   </h3>
                 </div>
 
-                {/* Image Preview Container */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   {!result ? (
-                    /* Before Compression - Show only original image */
                     <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-800">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt="Original"
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-bold">
-                        Original
-                      </div>
+                      <img src={URL.createObjectURL(file)} alt="Original" className="w-full h-full object-contain" />
                     </div>
                   ) : (
-                    /* After Compression - Show before/after comparison */
                     <>
-                      {/* Labels */}
                       <div className="grid grid-cols-2 border-b border-white/5">
-                        <div className="p-4 bg-black/20 flex justify-between items-center">
-                          <span className="text-xs font-bold text-primary tracking-widest uppercase">
-                            Before
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {originalSizeKB} KB
-                          </span>
+                        <div className="p-4 bg-black/20 flex justify-between items-center text-xs">
+                          <span className="font-bold text-primary uppercase">Before</span>
+                          <span className="text-slate-400">{originalSizeKB} KB</span>
                         </div>
-                        <div className="p-4 bg-primary/10 flex justify-between items-center border-l border-white/5">
-                          <span className="text-xs font-bold text-primary tracking-widest uppercase">
-                            After
-                          </span>
-                          <span className="text-xs text-green-400 font-bold">
-                            {estimatedSizeKB.toFixed(2)} KB (-{savingsPercent})
-                          </span>
+                        <div className="p-4 bg-primary/10 flex justify-between items-center text-xs border-l border-white/5">
+                          <span className="font-bold text-primary uppercase">After</span>
+                          <span className="text-green-400 font-bold">{estimatedSizeKB.toFixed(2)} KB (-{savingsPercent}%)</span>
                         </div>
                       </div>
-
-                      {/* Before/After Split View - Single Image */}
                       <div className="relative aspect-video w-full bg-slate-100 dark:bg-slate-800">
-                        {/* Original Image - Full */}
                         <div className="absolute inset-0">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt="Before"
-                            className="w-full h-full object-contain"
-                          />
-                          <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-bold">
-                            Before
-                          </div>
+                          <img src={URL.createObjectURL(file)} alt="Before" className="w-full h-full object-contain" />
                         </div>
-
-                        {/* Compressed Image - Right Half Only */}
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            clipPath: "inset(0 0 0 50%)",
-                          }}
-                        >
-                          <img
-                            src={getDownloadUrl(
-                              result.data?.filename || result.filename,
-                            )}
-                            alt="After"
-                            className="w-full h-full object-contain"
-                          />
-                          <div className="absolute top-2 right-2 px-2 py-1 rounded bg-primary/80 text-white text-xs font-bold">
-                            After
-                          </div>
+                        <div className="absolute inset-0" style={{ clipPath: "inset(0 0 0 50%)" }}>
+                          <img src={getDownloadUrl(result.data?.filename || result.filename)} alt="After" className="w-full h-full object-contain" />
                         </div>
-
-                        {/* Vertical Divider Line */}
                         <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white shadow-lg z-10" />
                       </div>
                     </>
                   )}
                 </div>
-
-                {/* File Size Comparison Chart */}
-                <div className="glass-card rounded-xl p-6">
-                  <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">
-                    Estimated Size Reduction
-                  </h4>
-                  <div className="space-y-4">
-                    {/* Original Size Bar */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-400">Original</span>
-                        <span className="font-bold">{originalSizeKB} KB</span>
-                      </div>
-                      <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-slate-500 rounded-full"
-                          style={{ width: "100%" }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Compressed Size Bar */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-400">Compressed</span>
-                        <span className="font-bold text-green-400">
-                          {estimatedSizeKB.toFixed(2)} KB
-                        </span>
-                      </div>
-                      <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{
-                            width: `${(estimatedSizeKB / originalSizeKB) * 100}%`,
-                          }}
-                          className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full"
-                        ></motion.div>
-                      </div>
-                    </div>
-
-                    {/* Savings Display */}
-                    <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-sm text-slate-400">
-                        You'll save
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-green-400">
-                          {savingsPercent}%
-                        </span>
-                        <span className="text-sm text-slate-400">
-                          (
-                          {(
-                            parseFloat(originalSizeKB) - estimatedSizeKB
-                          ).toFixed(2)}{" "}
-                          KB)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* Info Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="glass-card rounded-xl p-4 sm:p-6 text-center">
-                <Zap className="size-8 text-primary mx-auto mb-2" />
-                <h4 className="font-bold text-sm sm:text-base">
-                  Lightning Fast
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  Process in seconds
-                </p>
-              </div>
-              <div className="glass-card rounded-xl p-4 sm:p-6 text-center">
-                <Settings className="size-8 text-primary mx-auto mb-2" />
-                <h4 className="font-bold text-sm sm:text-base">Fine Control</h4>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  Adjust quality levels
-                </p>
-              </div>
-              <div className="glass-card rounded-xl p-4 sm:p-6 text-center">
-                <Info className="size-8 text-primary mx-auto mb-2" />
-                <h4 className="font-bold text-sm sm:text-base">
-                  No Quality Loss
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  Visually identical
-                </p>
-              </div>
+            {/* Desktop Info Cards - snapped under preview */}
+            <div className="hidden lg:grid grid-cols-3 gap-4 pt-2">
+              <InfoCardsContent />
             </div>
           </motion.div>
 
@@ -382,79 +215,39 @@ export default function Compress() {
                 <h2 className="text-xl font-bold">Compression Settings</h2>
               </div>
 
-              {/* Output Format - HIDDEN: Always use original format for better quality control */}
-              {false && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-400">
-                    Output Format
-                  </label>
-                  <select
-                    value={outputFormat}
-                    onChange={(e) => setOutputFormat(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  >
-                    <option value="original">Keep Original</option>
-                    <option value="jpeg">JPEG</option>
-                    <option value="png">PNG</option>
-                    <option value="webp">WebP</option>
-                  </select>
-                  <p className="text-xs text-slate-500">
-                    Choose the format for your compressed image
-                  </p>
-                </div>
-              )}
-
-              {/* Compression Presets */}
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-sm font-medium text-slate-400">
-                  Quick Presets
-                </label>
+                <label className="text-sm font-medium text-slate-400">Quick Presets</label>
                 <select
                   value={activePreset || ""}
                   onChange={(e) => {
-                    const preset = compressionPresets.find(
-                      (p) => p.id === e.target.value,
-                    );
+                    const preset = compressionPresets.find((p) => p.id === e.target.value);
                     if (preset) handlePresetClick(preset);
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white outline-none"
                 >
                   <option value="">Select a preset...</option>
                   {compressionPresets.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label} ({preset.quality}%) - {preset.description}
-                    </option>
+                    <option key={preset.id} value={preset.id}>{preset.label} ({preset.quality}%)</option>
                   ))}
                 </select>
               </div>
 
-              {/* Custom Target Size */}
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-sm font-medium text-slate-400">
-                  Target Size (KB)
-                </label>
+                <label className="text-sm font-medium text-slate-400">Target Size (KB)</label>
                 <input
                   type="number"
                   value={targetSize}
                   onChange={handleTargetSizeChange}
                   placeholder="e.g., 500"
-                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white outline-none"
                 />
-                <p className="text-xs text-slate-500">
-                  Specify exact file size in kilobytes
-                </p>
               </div>
 
-              {/* Compression Level Slider (shown when no target size) */}
               {!targetSize && (
                 <div className="space-y-4 pt-4 border-t border-white/5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-slate-400">
-                      Compression Level
-                    </label>
-                    <span className="text-primary font-bold text-lg">
-                      {quality}%
-                    </span>
+                  <div className="flex justify-between items-center text-sm">
+                    <label className="font-medium text-slate-400">Compression Level</label>
+                    <span className="text-primary font-bold">{quality}%</span>
                   </div>
                   <input
                     type="range"
@@ -467,143 +260,68 @@ export default function Compress() {
                     }}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                    <span>Maximum Compression</span>
-                    <span>Minimum Compression</span>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    {quality}% = Compress to {quality}% of original file size
-                  </p>
                 </div>
               )}
 
-              {/* Additional Options */}
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={stripMetadata}
-                    onChange={(e) => setStripMetadata(e.target.checked)}
-                    className="w-5 h-5 rounded border-white/10 bg-slate-800 text-primary focus:ring-primary"
-                  />
-                  <div className="flex-1">
-                    <span className="text-sm group-hover:text-white transition-colors block">
-                      Strip EXIF metadata
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      Remove camera data
-                    </span>
-                  </div>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-6 border-t border-white/5">
-                <motion.button
-                  whileHover={{ scale: file ? 1.02 : 1 }}
-                  whileTap={{ scale: file ? 0.98 : 1 }}
+              <div className="pt-6 border-t border-white/5 space-y-3">
+                <button
                   onClick={handleCompress}
                   disabled={!file || converting}
-                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
-                    file && !converting
-                      ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                      : "bg-slate-800 text-slate-500 cursor-not-allowed"
+                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ${
+                    file && !converting ? "bg-primary text-white" : "bg-slate-800 text-slate-500"
                   }`}
                 >
-                  {converting ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      >
-                        <Zap className="size-5" />
-                      </motion.div>
-                      Compressing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="size-5" />
-                      Compress Now
-                    </>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: result && !converting ? 1.02 : 1 }}
-                  whileTap={{ scale: result && !converting ? 0.98 : 1 }}
+                  {converting ? "Compressing..." : "Compress Now"}
+                </button>
+                <button
                   onClick={handleDownload}
-                  disabled={!result || converting}
-                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
-                    result && !converting
-                      ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white"
-                      : "border-white/5 text-slate-500 cursor-not-allowed"
-                  }`}
+                  disabled={!result}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border border-white/10"
                 >
-                  <Download className="size-5" />
-                  Download
-                </motion.button>
-
-                {/* Share Buttons */}
+                  <Download className="size-5" /> Download
+                </button>
+                
                 {file && !converting && (
-                  <div className="pt-4 border-t border-white/5">
-                    <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
-                      Share Result
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          window.open(
-                            "https://wa.me/?text=Check out my file!",
-                            "_blank",
-                          )
-                        }
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
-                      >
-                        <MessageCircle className="size-5" />
-                        <span className="text-xs font-medium">WhatsApp</span>
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          (window.location.href =
-                            "mailto:?subject=Shared File&body=Here is my file")
-                        }
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
-                      >
-                        <Mail className="size-5" />
-                        <span className="text-xs font-medium">Email</span>
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          window.open(
-                            "https://drive.google.com/drive/my-drive",
-                            "_blank",
-                          )
-                        }
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
-                      >
-                        <Cloud className="size-5" />
-                        <span className="text-xs font-medium">Drive</span>
-                      </motion.button>
-                    </div>
+                  <div className="pt-4 border-t border-white/5 flex gap-2">
+                     <button className="flex-1 p-3 rounded-lg bg-green-600 text-white"><MessageCircle className="mx-auto" /></button>
+                     <button className="flex-1 p-3 rounded-lg bg-red-600 text-white"><Mail className="mx-auto" /></button>
+                     <button className="flex-1 p-3 rounded-lg bg-yellow-600 text-white"><Cloud className="mx-auto" /></button>
                   </div>
                 )}
               </div>
             </div>
           </motion.div>
+
+          {/* Mobile Info Cards - appears at bottom after Settings */}
+          <div className="lg:hidden col-span-1 mt-4">
+            <div className="grid grid-cols-1 gap-4">
+              <InfoCardsContent />
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function InfoCardsContent() {
+  return (
+    <>
+      <div className="glass-card rounded-xl p-6 text-center">
+        <Zap className="size-8 text-primary mx-auto mb-2" />
+        <h4 className="font-bold">Lightning Fast</h4>
+        <p className="text-xs text-slate-400 mt-1">Process in seconds</p>
+      </div>
+      <div className="glass-card rounded-xl p-6 text-center">
+        <Settings className="size-8 text-primary mx-auto mb-2" />
+        <h4 className="font-bold">Fine Control</h4>
+        <p className="text-xs text-slate-400 mt-1">Adjust quality levels</p>
+      </div>
+      <div className="glass-card rounded-xl p-6 text-center">
+        <Info className="size-8 text-primary mx-auto mb-2" />
+        <h4 className="font-bold">No Quality Loss</h4>
+        <p className="text-xs text-slate-400 mt-1">Visually identical</p>
+      </div>
+    </>
   );
 }

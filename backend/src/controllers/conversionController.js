@@ -91,7 +91,7 @@ const convertImage = async (req, res) => {
         originalFormat: originalFormat,
         newFormat: format,
         originalSize: formatFileSize(originalSize),
-        convertedSize: formatFileSize(convertedSize),
+        compressedSize: formatFileSize(convertedSize),
         downloadUrl: `/api/download/${outputFilename}`,
       },
     });
