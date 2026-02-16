@@ -30,7 +30,7 @@ app.use("/api", imageRoutes);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Frontend URL: ${process.env.FRONTEND_URL}`);
   console.log(
@@ -39,6 +39,39 @@ app.listen(PORT, () => {
   console.log(
     `🗑️  Auto-delete after: ${process.env.CLOUDINARY_AUTO_DELETE_HOURS} hours`
   );
+});
+
+// Heartbeat to keep process alive in case of event loop issues
+setInterval(() => {
+  if (process.env.NODE_ENV === "development") {
+    // console.log("💓 Heartbeat - Server is alive");
+  }
+}, 30000);
+
+// Process event listeners for debugging
+process.on("SIGINT", () => {
+  console.log("🛑 Received SIGINT (Ctrl+C). Shutting down...");
+  server.close(() => {
+    console.log("👋 Server closed. Exit.");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", () => {
+  console.log("🛑 Received SIGTERM. Shutting down...");
+  server.close(() => {
+    process.exit(0);
+  });
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("💥 Uncaught Exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("💥 Unhandled Rejection at:", promise, "reason:", reason);
+  process.exit(1);
 });
 
 module.exports = app;
