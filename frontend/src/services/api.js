@@ -133,6 +133,10 @@ export const getDownloadUrl = (filenameOrUrl) => {
     (filenameOrUrl.startsWith("http://") ||
       filenameOrUrl.startsWith("https://"))
   ) {
+    // Force download behavior from Cloudinary by adding attachment flag.
+    if (filenameOrUrl.includes("res.cloudinary.com") && filenameOrUrl.includes("/upload/")) {
+      return filenameOrUrl.replace("/upload/", "/upload/fl_attachment/");
+    }
     return filenameOrUrl;
   }
 
@@ -140,24 +144,51 @@ export const getDownloadUrl = (filenameOrUrl) => {
   return `${API_BASE_URL}/download/${filenameOrUrl}`;
 };
 
+const getFilenameFromUrl = (url, fallback = `download-${Date.now()}`) => {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname || "";
+    const lastSegment = pathname.split("/").pop() || "";
+    return lastSegment || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 /**
  * Download file
  * Works with both Cloudinary URLs and API endpoints
  */
-export const downloadFile = (filenameOrUrl) => {
+export const downloadFile = async (filenameOrUrl) => {
   const url = getDownloadUrl(filenameOrUrl);
+  const fallbackName =
+    typeof filenameOrUrl === "string" &&
+    (filenameOrUrl.startsWith("http://") || filenameOrUrl.startsWith("https://"))
+      ? getFilenameFromUrl(filenameOrUrl)
+      : filenameOrUrl;
 
-  // Create a temporary anchor element to trigger download
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filenameOrUrl.includes("/")
-    ? filenameOrUrl.split("/").pop()
-    : filenameOrUrl;
-  link.style.display = "none";
+  try {
+    // Force a same-origin blob URL download so browsers don't navigate to Cloudinary.
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Download failed with status ${response.status}`);
+    }
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fallbackName || `download-${Date.now()}`;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
+  } catch (error) {
+    console.error("Download failed:", error);
+    // Last-resort fallback: open the file URL.
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 };
 
 export default api;
