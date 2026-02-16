@@ -32,6 +32,7 @@ const convert = async (req, res, next) => {
 
     // Upload to Cloudinary
     const uploadResult = await uploadImage(converted.buffer, {
+      originalName: req.file.originalname,
       format: converted.format,
       quality: quality ? parseInt(quality) : "auto:best",
     });

@@ -1,5 +1,6 @@
 const cloudinary = require("../config/cloudinary");
 const axios = require("axios");
+const path = require("path");
 
 /**
  * Download file from Cloudinary
@@ -29,8 +30,23 @@ const download = async (req, res, next) => {
     });
 
     // Set headers for download
-    const fileExtension = filename.split(".").pop() || "jpg";
-    const downloadFilename = `processed-${Date.now()}.${fileExtension}`;
+    const baseName = path.parse(filename).name || "download";
+    const contentType = response.headers["content-type"] || "";
+    const contentTypeToExt = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+      "image/tiff": "tiff",
+      "image/avif": "avif",
+      "application/pdf": "pdf",
+      "application/zip": "zip",
+    };
+    const fileExtension =
+      path.parse(filename).ext.replace(".", "") ||
+      contentTypeToExt[contentType] ||
+      "bin";
+    const downloadFilename = `${baseName}.${fileExtension}`;
 
     res.setHeader(
       "Content-Disposition",

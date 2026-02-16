@@ -36,6 +36,7 @@ const compress = async (req, res, next) => {
 
     // Upload to Cloudinary
     const uploadResult = await uploadImage(compressed.buffer, {
+      originalName: req.file.originalname,
       format:
         outputFormat && outputFormat !== "original"
           ? outputFormat

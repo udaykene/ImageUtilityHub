@@ -1,19 +1,33 @@
 const cloudinary = require("../config/cloudinary");
 const sharp = require("sharp");
-const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+
+const sanitizePublicId = (filename = "") => {
+  const baseName = path.parse(filename).name || "file";
+  return baseName
+    .trim()
+    .replace(/[^\w.-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .substring(0, 120);
+};
 
 /**
  * Upload image to Cloudinary with transformations
  */
 const uploadImage = async (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
+    const { originalName, ...otherOptions } = options;
+    const safePublicId = sanitizePublicId(originalName);
+
     const uploadOptions = {
       folder: "image-utility-hub",
       resource_type: "auto",
-      unique_filename: true,
-      use_filename: false,
-      public_id: `img_${uuidv4()}`,
-      ...options,
+      use_filename: true,
+      unique_filename: false,
+      overwrite: true,
+      public_id: safePublicId,
+      filename_override: safePublicId,
+      ...otherOptions,
     };
 
     const uploadStream = cloudinary.uploader.upload_stream(

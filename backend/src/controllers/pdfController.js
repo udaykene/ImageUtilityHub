@@ -83,6 +83,10 @@ const imagesToPDF = async (req, res, next) => {
 
     // Upload PDF to Cloudinary
     const uploadResult = await uploadImage(pdfBuffer, {
+      originalName:
+        req.files.length === 1
+          ? req.files[0].originalname
+          : "images-to-pdf.pdf",
       format: "pdf",
       resource_type: "raw",
     });
