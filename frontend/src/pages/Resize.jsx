@@ -128,9 +128,9 @@ export default function Resize() {
   };
 
   const handleDownload = () => {
-    const filename = result?.filename;
-    if (filename) {
-      downloadFile(filename);
+    const cloudinaryUrl = result?.cloudinaryUrl;
+    if (cloudinaryUrl) {
+      downloadFile(cloudinaryUrl);
     }
   };
 
@@ -363,7 +363,7 @@ function PreviewPanel({ originalUrl, result }) {
             </p>
             <div className="aspect-square w-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative border border-primary/20 bg-primary/5">
               <img
-                src={getDownloadUrl(result.filename)}
+                src={getDownloadUrl(result.cloudinaryUrl)}
                 alt="After"
                 className="w-full h-full object-contain"
               />
@@ -649,7 +649,7 @@ function ActionPanel({
 }
 
 function ShareActions({ result }) {
-  if (!result?.filename) return null;
+  if (!result?.cloudinaryUrl) return null;
 
   return (
     <div className="pt-4 border-t border-white/5 space-y-3">
@@ -658,7 +658,7 @@ function ShareActions({ result }) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() =>
-            shareToWhatsApp(result.filename, "Check out my resized image!")
+            shareToWhatsApp(result.cloudinaryUrl, "Check out my resized image!")
           }
           className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
         >
@@ -669,7 +669,7 @@ function ShareActions({ result }) {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => shareByEmail(result.filename, "My Resized Image")}
+          onClick={() => shareByEmail(result.cloudinaryUrl, "My Resized Image")}
           className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
         >
           <Mail className="size-5" />
@@ -680,7 +680,7 @@ function ShareActions({ result }) {
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => shareToDrive(result.filename)}
+        onClick={() => shareToDrive(result.cloudinaryUrl)}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
       >
         <Cloud className="size-5" />

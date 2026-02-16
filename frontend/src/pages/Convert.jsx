@@ -70,9 +70,9 @@ export default function Convert() {
   };
 
   const handleDownload = () => {
-    const filename = result?.data?.filename || result?.filename;
-    if (filename) {
-      downloadFile(filename);
+    const cloudinaryUrl = result?.data?.cloudinaryUrl || result?.cloudinaryUrl;
+    if (cloudinaryUrl) {
+      downloadFile(cloudinaryUrl);
     }
   };
 
@@ -275,7 +275,8 @@ export default function Convert() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
                             shareToWhatsApp(
-                              result.filename,
+                              result.data?.cloudinaryUrl ||
+                                result.cloudinaryUrl,
                               "Check out my converted image!",
                             )
                           }
@@ -291,7 +292,11 @@ export default function Convert() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
-                            shareByEmail(result.filename, "My Converted Image")
+                            shareByEmail(
+                              result.data?.cloudinaryUrl ||
+                                result.cloudinaryUrl,
+                              "My Converted Image",
+                            )
                           }
                           className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
                         >
@@ -303,7 +308,11 @@ export default function Convert() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => shareToDrive(result.filename)}
+                        onClick={() =>
+                          shareToDrive(
+                            result.data?.cloudinaryUrl || result.cloudinaryUrl,
+                          )
+                        }
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
                       >
                         <Cloud className="size-5" />

@@ -76,8 +76,8 @@ export default function ImagesToPDF() {
   };
 
   const handleDownload = () => {
-    if (result && result.filename) {
-      downloadFile(result.filename);
+    if (result && result.cloudinaryUrl) {
+      downloadFile(result.cloudinaryUrl);
     }
   };
 
@@ -398,7 +398,7 @@ export default function ImagesToPDF() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
                             shareToWhatsApp(
-                              result.filename,
+                              result.cloudinaryUrl,
                               "My PDF Document",
                               "application/pdf",
                             )
@@ -416,7 +416,7 @@ export default function ImagesToPDF() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() =>
                             shareByEmail(
-                              result.filename,
+                              result.cloudinaryUrl,
                               "My PDF File",
                               "application/pdf",
                             )
@@ -432,7 +432,7 @@ export default function ImagesToPDF() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() =>
-                          shareToDrive(result.filename, "application/pdf")
+                          shareToDrive(result.cloudinaryUrl, "application/pdf")
                         }
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
                       >

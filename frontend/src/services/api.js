@@ -124,21 +124,35 @@ export const createPDFFromImages = async (files, options = {}) => {
 
 /**
  * Get download URL for a file
+ * Now works with both Cloudinary URLs and legacy filename format
  */
-export const getDownloadUrl = (filename) => {
-  return `${API_BASE_URL}/download/${filename}`;
+export const getDownloadUrl = (filenameOrUrl) => {
+  // If it's already a full URL (Cloudinary), return it as is
+  if (
+    filenameOrUrl &&
+    (filenameOrUrl.startsWith("http://") ||
+      filenameOrUrl.startsWith("https://"))
+  ) {
+    return filenameOrUrl;
+  }
+
+  // Otherwise, use the legacy API download endpoint
+  return `${API_BASE_URL}/download/${filenameOrUrl}`;
 };
 
 /**
  * Download file
+ * Works with both Cloudinary URLs and API endpoints
  */
-export const downloadFile = (filename) => {
-  const url = getDownloadUrl(filename);
+export const downloadFile = (filenameOrUrl) => {
+  const url = getDownloadUrl(filenameOrUrl);
 
   // Create a temporary anchor element to trigger download
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = filenameOrUrl.includes("/")
+    ? filenameOrUrl.split("/").pop()
+    : filenameOrUrl;
   link.style.display = "none";
 
   document.body.appendChild(link);

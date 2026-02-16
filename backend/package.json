@@ -2,10 +2,10 @@
   "name": "image-utility-backend",
   "version": "1.0.0",
   "description": "Backend for image formatting tool",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [
     "image",
@@ -17,11 +17,12 @@
   "type": "commonjs",
   "dependencies": {
     "archiver": "^7.0.1",
+    "axios": "^1.13.5",
     "body-parser": "^2.2.2",
+    "cloudinary": "^2.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
-    "mongoose": "^9.2.1",
     "multer": "^2.0.2",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",

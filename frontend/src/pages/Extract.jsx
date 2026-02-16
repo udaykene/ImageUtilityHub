@@ -197,7 +197,7 @@ export default function Extract() {
                   New Project
                 </button>
                 <button
-                  onClick={() => downloadFile(result.filename)}
+                  onClick={() => downloadFile(result.cloudinaryUrl)}
                   className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 >
                   <Download className="size-5" />
@@ -233,7 +233,7 @@ export default function Extract() {
                       <div className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 mb-3 flex items-center justify-center overflow-hidden">
                         {img.url ? (
                           <img
-                            src={`${import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000"}${img.url}`}
+                            src={`${import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000"}${img.url}`}
                             alt={img.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
@@ -269,7 +269,7 @@ export default function Extract() {
                       <button
                         onClick={() =>
                           shareToWhatsApp(
-                            result.filename,
+                            result.cloudinaryUrl,
                             "PDF Images",
                             "application/zip",
                           )
@@ -284,7 +284,7 @@ export default function Extract() {
                       <button
                         onClick={() =>
                           shareByEmail(
-                            result.filename,
+                            result.cloudinaryUrl,
                             "Extracted PDF Images",
                             "application/zip",
                           )
@@ -300,7 +300,7 @@ export default function Extract() {
 
                     <button
                       onClick={() =>
-                        shareToDrive(result.filename, "application/zip")
+                        shareToDrive(result.cloudinaryUrl, "application/zip")
                       }
                       className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-all border border-yellow-500/10"
                     >

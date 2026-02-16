@@ -1,31 +1,28 @@
-import { getDownloadUrl } from "@/services/api";
-
 const isMobile = () =>
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
 
 /**
- * Enhanced sharing utility using Web Share API
- * Prioritizes sharing actual files (images/PDFs/ZIPs) to provide a native experience.
+ * Enhanced sharing utility using Web Share API with Cloudinary URLs
+ * Works directly with Cloudinary URLs - no download needed!
  */
 export const shareFile = async ({
-  filename,
+  cloudinaryUrl,
   title = "Check out my file!",
   text = "Processed with Image Utility Hub",
   fileType = "image/png",
 }) => {
-  if (!filename) return { success: false, error: "No filename provided" };
-
-  const url = getDownloadUrl(filename);
+  if (!cloudinaryUrl) return { success: false, error: "No URL provided" };
 
   try {
-    // 1. Fetch the file to share it as an actual File object
-    const response = await fetch(url);
+    // 1. Fetch the file from Cloudinary to share it as an actual File object
+    const response = await fetch(cloudinaryUrl);
     if (!response.ok) throw new Error("Failed to fetch file for sharing");
     const blob = await response.blob();
 
-    // Ensure we have a proper filename and extension
+    // Extract filename from Cloudinary URL or use timestamp
+    const filename = cloudinaryUrl.split("/").pop() || `file-${Date.now()}`;
     const file = new File([blob], filename, { type: fileType });
 
     // 2. Check if the device can share this specific file
@@ -40,7 +37,7 @@ export const shareFile = async ({
 
     // 3. Fallback to basic share (links) only if file sharing is NOT supported
     if (navigator.share) {
-      await navigator.share({ title, text, url });
+      await navigator.share({ title, text, url: cloudinaryUrl });
       return { success: true, method: "link" };
     }
 
@@ -58,11 +55,10 @@ export const shareFile = async ({
 /**
  * Copies a blob (image) to the clipboard for Desktop sharing.
  */
-export const copyImageToClipboard = async (url) => {
+export const copyImageToClipboard = async (cloudinaryUrl) => {
   try {
-    const response = await fetch(url);
+    const response = await fetch(cloudinaryUrl);
     const blob = await response.blob();
-    // ClipboardItem only supports PNG in many browsers, but we'll try the blob type
     const item = new ClipboardItem({ [blob.type]: blob });
     await navigator.clipboard.write([item]);
     return true;
@@ -73,31 +69,43 @@ export const copyImageToClipboard = async (url) => {
 };
 
 /**
- * Specialized WhatsApp sharing.
+ * Copy URL to clipboard
+ */
+export const copyUrlToClipboard = async (url) => {
+  try {
+    await navigator.clipboard.writeText(url);
+    return true;
+  } catch (err) {
+    console.error("URL copy failed:", err);
+    return false;
+  }
+};
+
+/**
+ * Specialized WhatsApp sharing with Cloudinary URLs
  */
 export const shareToWhatsApp = async (
-  filename,
+  cloudinaryUrl,
   customText = "Check out my file!",
   fileType = "image/png",
 ) => {
   if (isMobile()) {
-    return await shareFile({ filename, text: customText, fileType });
+    return await shareFile({ cloudinaryUrl, text: customText, fileType });
   }
 
   // Desktop Flow: Clipboard + Web WhatsApp
-  const url = getDownloadUrl(filename);
   if (fileType.startsWith("image/")) {
-    const copied = await copyImageToClipboard(url);
+    const copied = await copyImageToClipboard(cloudinaryUrl);
     if (copied) {
       alert(
         "Image copied to clipboard! Opening WhatsApp Web... Just press Ctrl+V to paste your image.",
       );
     }
   } else {
+    // For non-images, copy URL
+    await copyUrlToClipboard(cloudinaryUrl);
     alert(
-      "Opening WhatsApp Web... Since this is a " +
-        fileType.split("/")[1].toUpperCase() +
-        " file, please drag it into the chat.",
+      "Link copied to clipboard! Opening WhatsApp Web... Paste (Ctrl+V) the link to share the file.",
     );
   }
   window.open("https://web.whatsapp.com/", "_blank");
@@ -105,53 +113,59 @@ export const shareToWhatsApp = async (
 };
 
 /**
- * Dedicated Email sharing.
+ * Dedicated Email sharing with Cloudinary URLs
  */
 export const shareByEmail = async (
-  filename,
+  cloudinaryUrl,
   subject = "Processed File",
   fileType = "image/png",
 ) => {
   if (isMobile()) {
-    return await shareFile({ filename, title: subject, fileType });
+    return await shareFile({ cloudinaryUrl, title: subject, fileType });
   }
 
   // Desktop Flow: Clipboard + mailto
-  const url = getDownloadUrl(filename);
   if (fileType.startsWith("image/")) {
-    await copyImageToClipboard(url);
-    alert(
-      "Image copied to clipboard! Opening your mail app... You can now paste (Ctrl+V) the image directly into your email.",
-    );
+    const copied = await copyImageToClipboard(cloudinaryUrl);
+    if (copied) {
+      alert(
+        "Image copied to clipboard! Opening your mail app... You can now paste (Ctrl+V) the image directly into your email.",
+      );
+    }
   }
 
   const mailtoUrl = `mailto:?subject=${encodeURIComponent(
     subject,
   )}&body=${encodeURIComponent(
-    "Hello,\n\nI processed a file using Image Utility Hub. You can find it here: " +
-      url,
+    "Hello,\n\nI processed a file using Image Utility Hub. You can view/download it here:\n\n" +
+      cloudinaryUrl,
   )}`;
   window.open(mailtoUrl, "_blank");
   return { success: true };
 };
 
 /**
- * Dedicated Google Drive logic.
+ * Dedicated Google Drive logic with Cloudinary URLs
  */
-export const shareToDrive = async (filename, fileType = "image/png") => {
+export const shareToDrive = async (cloudinaryUrl, fileType = "image/png") => {
   // 1. Try native share (best for mobile Drive app)
   if (isMobile()) {
     return await shareFile({
-      filename,
+      cloudinaryUrl,
       title: "Save to Drive",
       text: "Saving processed file to Google Drive",
       fileType,
     });
   }
 
-  // 2. Desktop Flow: Use Google "Save to Drive" logic or direct link
+  // 2. Desktop Flow: Copy URL and open Drive
+  await copyUrlToClipboard(cloudinaryUrl);
   alert(
-    "Opening Google Drive... You can save this file directly to your cloud storage by dragging the file or using the upload button.",
+    "Link copied to clipboard! Opening Google Drive... You can:\n" +
+      "1. Click 'New' → 'File Upload' and paste the image URL\n" +
+      "2. Or download the file first using the link in your clipboard:\n" +
+      cloudinaryUrl.substring(0, 60) +
+      "...",
   );
   window.open("https://drive.google.com/drive/my-drive", "_blank");
   return { success: true };

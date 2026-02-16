@@ -85,8 +85,8 @@ export default function Compress() {
   };
 
   const handleDownload = () => {
-    if (result && (result.data?.filename || result.filename)) {
-      downloadFile(result.data?.filename || result.filename);
+    if (result && (result.data?.cloudinaryUrl || result.cloudinaryUrl)) {
+      downloadFile(result.data?.cloudinaryUrl || result.cloudinaryUrl);
     }
   };
 
@@ -212,7 +212,8 @@ export default function Compress() {
                         >
                           <img
                             src={getDownloadUrl(
-                              result.data?.filename || result.filename,
+                              result.data?.cloudinaryUrl ||
+                                result.cloudinaryUrl,
                             )}
                             alt="After"
                             className="w-full h-full object-contain"
@@ -331,7 +332,7 @@ export default function Compress() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() =>
                           shareToWhatsApp(
-                            result.data?.filename || result.filename,
+                            result.data?.cloudinaryUrl || result.cloudinaryUrl,
                             "Check out my compressed image!",
                           )
                         }
@@ -348,7 +349,7 @@ export default function Compress() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() =>
                           shareByEmail(
-                            result.data?.filename || result.filename,
+                            result.data?.cloudinaryUrl || result.cloudinaryUrl,
                             "My Compressed Image",
                           )
                         }
@@ -363,7 +364,9 @@ export default function Compress() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() =>
-                        shareToDrive(result.data?.filename || result.filename)
+                        shareToDrive(
+                          result.data?.cloudinaryUrl || result.cloudinaryUrl,
+                        )
                       }
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
                     >
