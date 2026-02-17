@@ -19,7 +19,7 @@ const resize = async (req, res, next) => {
     const {
       width,
       height,
-      fit = "cover",
+      fit = "contain",
       maintainAspectRatio = "true",
       outputFormat,
       quality,

@@ -81,12 +81,12 @@ export default function Extract() {
               <FileImage className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
-              PDF Image Extraction
+              PDF Page Extraction
             </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl">
-            Extract all embedded images from PDF documents in their original
-            resolution and quality.
+            Extract each PDF page as an image and download everything in one
+            ZIP package.
           </p>
         </motion.div>
 
@@ -197,7 +197,16 @@ export default function Extract() {
                   New Project
                 </button>
                 <button
-                  onClick={() => downloadFile(result.cloudinaryUrl)}
+                  onClick={async () => {
+                    try {
+                      await downloadFile(result.cloudinaryUrl);
+                    } catch (error) {
+                      console.error("ZIP download failed:", error);
+                      alert(
+                        "Failed to download ZIP. Please try again in a moment."
+                      );
+                    }
+                  }}
                   className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 >
                   <Download className="size-5" />
@@ -334,8 +343,8 @@ export default function Extract() {
             <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
               <FileImage className="size-4" />
               <p>
-                Secure Image Extraction: Only embedded image streams are
-                extracted. Original resolution preserved.
+                Secure extraction: pages are rendered to images and packaged as
+                ZIP for download.
               </p>
             </div>
           </motion.div>

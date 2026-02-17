@@ -1,6 +1,22 @@
 const { PDFDocument } = require("pdf-lib");
-const pdfParse = require("pdf-parse");
 const sharp = require("sharp");
+const { createCanvas } = require("@napi-rs/canvas");
+
+const normalizePageSize = (pageSize = "A4") => {
+  const value = String(pageSize).trim().toLowerCase();
+  const map = {
+    a4: "A4",
+    letter: "Letter",
+    legal: "Legal",
+    auto: "Auto",
+  };
+  return map[value] || "A4";
+};
+
+const normalizeOrientation = (orientation = "portrait") => {
+  const value = String(orientation).trim().toLowerCase();
+  return value === "landscape" ? "landscape" : "portrait";
+};
 
 /**
  * Extract images from PDF
@@ -8,25 +24,50 @@ const sharp = require("sharp");
 const extractImagesFromPDF = async (buffer) => {
   try {
     const pdfDoc = await PDFDocument.load(buffer);
-    const pages = pdfDoc.getPages();
+    const info = {
+      title: pdfDoc.getTitle() || null,
+      author: pdfDoc.getAuthor() || null,
+      subject: pdfDoc.getSubject() || null,
+      keywords: pdfDoc.getKeywords() || null,
+      creator: pdfDoc.getCreator() || null,
+      producer: pdfDoc.getProducer() || null,
+      creationDate: pdfDoc.getCreationDate() || null,
+      modificationDate: pdfDoc.getModificationDate() || null,
+    };
+
+    // Render each PDF page to PNG so extraction returns usable image files.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      disableWorker: true,
+    });
+    const pdf = await loadingTask.promise;
     const images = [];
 
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = createCanvas(
+        Math.max(1, Math.ceil(viewport.width)),
+        Math.max(1, Math.ceil(viewport.height))
+      );
+      const context = canvas.getContext("2d");
+      await page.render({ canvasContext: context, viewport }).promise;
 
-      // This is a simplified extraction
-      // For production, you might need a more robust PDF parsing library
-      console.log(`Processing page ${i + 1} of ${pages.length}`);
+      const imageBuffer = canvas.toBuffer("image/png");
+      images.push({
+        name: `page-${pageNum}.png`,
+        mimeType: "image/png",
+        sizeBytes: imageBuffer.length,
+        buffer: imageBuffer,
+      });
     }
 
-    // Use pdf-parse to extract raw data
-    const data = await pdfParse(buffer);
-
     return {
-      pageCount: pages.length,
-      text: data.text,
-      info: data.info,
-      metadata: data.metadata,
+      pageCount: pdf.numPages,
+      imageCount: images.length,
+      images,
+      info,
     };
   } catch (error) {
     console.error("Error extracting images from PDF:", error);
@@ -39,7 +80,10 @@ const extractImagesFromPDF = async (buffer) => {
  */
 const createPDFFromImages = async (imageBuffers, options = {}) => {
   try {
-    const { pageSize = "A4", orientation = "portrait", margin = 50 } = options;
+    const pageSize = normalizePageSize(options.pageSize || "A4");
+    const orientation = normalizeOrientation(options.orientation || "portrait");
+    const parsedMargin = Number(options.margin);
+    const margin = Number.isFinite(parsedMargin) && parsedMargin >= 0 ? parsedMargin : 50;
 
     // Page size dimensions in points (1 point = 1/72 inch)
     const pageSizes = {
@@ -48,14 +92,14 @@ const createPDFFromImages = async (imageBuffers, options = {}) => {
       Legal: orientation === "portrait" ? [612, 1008] : [1008, 612],
     };
 
-    const [pageWidth, pageHeight] = pageSizes[pageSize] || pageSizes["A4"];
-
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
 
     for (const imageBuffer of imageBuffers) {
       // Get image metadata
       const metadata = await sharp(imageBuffer).metadata();
+      const sourceWidth = metadata.width || 1;
+      const sourceHeight = metadata.height || 1;
 
       // Embed image in PDF
       let image;
@@ -65,6 +109,15 @@ const createPDFFromImages = async (imageBuffers, options = {}) => {
         // Convert to JPEG if not PNG
         const jpegBuffer = await sharp(imageBuffer).jpeg().toBuffer();
         image = await pdfDoc.embedJpg(jpegBuffer);
+      }
+
+      let pageWidth;
+      let pageHeight;
+      if (pageSize === "Auto") {
+        pageWidth = sourceWidth + margin * 2;
+        pageHeight = sourceHeight + margin * 2;
+      } else {
+        [pageWidth, pageHeight] = pageSizes[pageSize] || pageSizes["A4"];
       }
 
       // Calculate dimensions to fit within page with margins

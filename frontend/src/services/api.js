@@ -133,15 +133,14 @@ export const getDownloadUrl = (filenameOrUrl) => {
     (filenameOrUrl.startsWith("http://") ||
       filenameOrUrl.startsWith("https://"))
   ) {
-    // Force download behavior from Cloudinary by adding attachment flag.
-    if (filenameOrUrl.includes("res.cloudinary.com") && filenameOrUrl.includes("/upload/")) {
-      return filenameOrUrl.replace("/upload/", "/upload/fl_attachment/");
+    if (filenameOrUrl.includes("res.cloudinary.com")) {
+      return `${API_BASE_URL}/download?cloudinaryUrl=${encodeURIComponent(filenameOrUrl)}`;
     }
     return filenameOrUrl;
   }
 
   // Otherwise, use the legacy API download endpoint
-  return `${API_BASE_URL}/download/${filenameOrUrl}`;
+  return `${API_BASE_URL}/download/${encodeURIComponent(filenameOrUrl)}`;
 };
 
 const getFilenameFromUrl = (url, fallback = `download-${Date.now()}`) => {
@@ -186,8 +185,7 @@ export const downloadFile = async (filenameOrUrl) => {
     window.URL.revokeObjectURL(objectUrl);
   } catch (error) {
     console.error("Download failed:", error);
-    // Last-resort fallback: open the file URL.
-    window.open(url, "_blank", "noopener,noreferrer");
+    throw error;
   }
 };
 

@@ -15,6 +15,7 @@ router.post("/convert", upload.single("image"), convert);
 router.post("/resize", upload.single("image"), resize);
 router.post("/extract", upload.single("image"), extract);
 router.post("/images-to-pdf", upload.array("images", 20), imagesToPDF);
+router.get("/download", download);
 router.get("/download/:filename", download);
 
 module.exports = router;
