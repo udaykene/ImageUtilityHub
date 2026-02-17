@@ -19,7 +19,6 @@ import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
 export default function Compress() {
   const [file, setFile] = useState(null);
   const [quality, setQuality] = useState(80);
-  const [targetSize, setTargetSize] = useState("");
   const [outputFormat, setOutputFormat] = useState("original");
   const [stripMetadata, setStripMetadata] = useState(true);
   const [converting, setConverting] = useState(false);
@@ -55,12 +54,6 @@ export default function Compress() {
   const handlePresetClick = (preset) => {
     setQuality(preset.quality);
     setActivePreset(preset.id);
-    setTargetSize("");
-  };
-
-  const handleTargetSizeChange = (e) => {
-    setTargetSize(e.target.value);
-    setActivePreset(null);
   };
 
   const handleCompress = async () => {
@@ -72,7 +65,6 @@ export default function Compress() {
     try {
       const response = await compressImage(file, {
         quality,
-        targetSize,
         outputFormat,
         stripMetadata,
       });
@@ -92,7 +84,6 @@ export default function Compress() {
 
   const getEstimatedSize = () => {
     if (!file) return 0;
-    if (targetSize) return parseFloat(targetSize);
     return (file.size * (quality / 100)) / 1024;
   };
 
@@ -269,40 +260,25 @@ export default function Compress() {
                 </select>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-sm font-medium text-slate-400">
-                  Target Size (KB)
-                </label>
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="flex justify-between items-center text-sm">
+                  <label className="font-medium text-slate-400">
+                    Compression Level
+                  </label>
+                  <span className="text-primary font-bold">{quality}%</span>
+                </div>
                 <input
-                  type="number"
-                  value={targetSize}
-                  onChange={handleTargetSizeChange}
-                  placeholder="e.g., 500"
-                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-white/10 text-white outline-none"
+                  type="range"
+                  min="10"
+                  max="95"
+                  value={quality}
+                  onChange={(e) => {
+                    setQuality(parseInt(e.target.value));
+                    setActivePreset(null);
+                  }}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
-
-              {!targetSize && (
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <div className="flex justify-between items-center text-sm">
-                    <label className="font-medium text-slate-400">
-                      Compression Level
-                    </label>
-                    <span className="text-primary font-bold">{quality}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="95"
-                    value={quality}
-                    onChange={(e) => {
-                      setQuality(parseInt(e.target.value));
-                      setActivePreset(null);
-                    }}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                </div>
-              )}
 
               <div className="pt-6 border-t border-white/5 space-y-3">
                 <button

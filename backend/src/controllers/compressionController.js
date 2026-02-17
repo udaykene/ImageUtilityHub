@@ -35,13 +35,17 @@ const compress = async (req, res, next) => {
     );
 
     // Upload to Cloudinary
+    // const uploadResult = await uploadImage(compressed.buffer, {
+    //   originalName: req.file.originalname,
+    //   format:
+    //     outputFormat && outputFormat !== "original"
+    //       ? outputFormat
+    //       : compressed.format,
+    // });
+
     const uploadResult = await uploadImage(compressed.buffer, {
       originalName: req.file.originalname,
-      format:
-        outputFormat && outputFormat !== "original"
-          ? outputFormat
-          : compressed.format,
-      quality: "auto:best",
+      format: compressed.format,
     });
 
     // Schedule auto-deletion (24 hours from .env)
