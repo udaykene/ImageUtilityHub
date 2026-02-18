@@ -7,6 +7,9 @@ const {
   scheduleAutoDeletion,
 } = require("../utils/cloudinaryHelper");
 const archiver = require("archiver");
+const cloudinary = require("../config/cloudinary");
+const axios = require("axios");
+const path = require("path");
 
 const parseMarginToPoints = (marginInput) => {
   if (marginInput === undefined || marginInput === null) return 50;
@@ -43,24 +46,16 @@ const normalizeOrientation = (orientationInput) => {
   return value === "landscape" ? "landscape" : "portrait";
 };
 
-const createZipFromFiles = async (files) =>
-  new Promise((resolve, reject) => {
-    const chunks = [];
-    const zip = archiver("zip", { zlib: { level: 9 } });
-
-    zip.on("warning", (err) => {
-      if (err.code === "ENOENT") return;
-      reject(err);
-    });
-    zip.on("error", reject);
-    zip.on("data", (chunk) => chunks.push(chunk));
-    zip.on("end", () => resolve(Buffer.concat(chunks)));
-
-    for (const file of files) {
-      zip.append(file.buffer, { name: file.name });
-    }
-    zip.finalize();
-  });
+const sanitizeFilename = (name = "", fallback = "image") => {
+  const base = path.parse(String(name || "")).name || fallback;
+  const ext = path.parse(String(name || "")).ext || "";
+  return (
+    `${base}${ext}`
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+      .replace(/\s+/g, "_")
+      .substring(0, 180) || fallback
+  );
+};
 
 /**
  * Extract images from PDF endpoint
@@ -83,43 +78,142 @@ const extract = async (req, res, next) => {
 
     console.log("Extracting images from PDF...");
 
-    // Extract rendered page images from PDF
+    // Extract embedded images from PDF
     const pdfData = await extractImagesFromPDF(req.file.buffer);
-    const zipBuffer = await createZipFromFiles(pdfData.images);
+    const deleteAfterHours =
+      parseInt(process.env.CLOUDINARY_AUTO_DELETE_HOURS, 10) || 24;
 
     const sourceBaseName = req.file.originalname
       ? req.file.originalname.replace(/\.pdf$/i, "")
       : "extracted-images";
-    const zipUpload = await uploadImage(zipBuffer, {
-      originalName: `${sourceBaseName}-images.zip`,
-      format: "zip",
-      resource_type: "raw",
-    });
 
-    const deleteAfterHours =
-      parseInt(process.env.CLOUDINARY_AUTO_DELETE_HOURS, 10) || 24;
-    scheduleAutoDeletion(zipUpload.public_id, deleteAfterHours);
+    const uploadedImages = [];
+    const concurrency = 4;
+    let cursor = 0;
+
+    const worker = async () => {
+      while (cursor < pdfData.images.length) {
+        const index = cursor++;
+        const image = pdfData.images[index];
+        const extension =
+          image.mimeType === "image/jpeg"
+            ? "jpg"
+            : image.mimeType === "image/webp"
+              ? "webp"
+              : image.mimeType === "image/gif"
+                ? "gif"
+                : image.mimeType === "image/tiff"
+                  ? "tiff"
+                  : image.mimeType === "image/avif"
+                    ? "avif"
+                    : "png";
+
+        const uploadResult = await uploadImage(image.buffer, {
+          originalName: `${sourceBaseName}-image-${index + 1}.${extension}`,
+          resource_type: "image",
+          format: extension,
+        });
+        scheduleAutoDeletion(uploadResult.public_id, deleteAfterHours);
+
+        uploadedImages[index] = {
+          id: uploadResult.public_id,
+          publicId: uploadResult.public_id,
+          name: image.name,
+          size: `${(image.sizeBytes / 1024).toFixed(2)} KB`,
+          mimeType: image.mimeType,
+          width: image.width || uploadResult.width || null,
+          height: image.height || uploadResult.height || null,
+          sourcePage: image.sourcePage || null,
+          resourceType: uploadResult.resource_type || "image",
+          format: uploadResult.format || extension,
+          cloudinaryUrl: uploadResult.secure_url,
+        };
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, pdfData.images.length || 1) }, () =>
+        worker()
+      )
+    );
 
     res.json({
       success: true,
-      message: "PDF images extracted successfully",
+      message:
+        uploadedImages.length > 0
+          ? "PDF images extracted successfully"
+          : "No embedded images found in this PDF",
       data: {
         pageCount: pdfData.pageCount,
-        imageCount: pdfData.imageCount,
-        images: pdfData.images.map((img) => ({
-          name: img.name,
-          size: `${(img.sizeBytes / 1024).toFixed(2)} KB`,
-          mimeType: img.mimeType,
-          url: null,
-        })),
-        filename: zipUpload.public_id,
-        cloudinaryUrl: zipUpload.secure_url,
+        imageCount: uploadedImages.length,
+        images: uploadedImages,
         expiresIn: `${deleteAfterHours} hours`,
         info: pdfData.info,
       },
     });
   } catch (error) {
     console.error("PDF extraction error:", error);
+    next(error);
+  }
+};
+
+/**
+ * Download selected extracted images as ZIP
+ */
+const downloadExtractedSelection = async (req, res, next) => {
+  try {
+    const { images, zipName } = req.body || {};
+    const selected = Array.isArray(images) ? images : [];
+
+    if (!selected.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No images selected for ZIP download",
+      });
+    }
+
+    const archiveName = sanitizeFilename(zipName || "extracted-images.zip");
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${archiveName.endsWith(".zip") ? archiveName : `${archiveName}.zip`}"`
+    );
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.on("error", (err) => next(err));
+    archive.pipe(res);
+
+    for (let i = 0; i < selected.length; i++) {
+      const item = selected[i] || {};
+      const publicId = String(item.publicId || "").trim();
+      if (!publicId) continue;
+
+      const format = String(item.format || "png").replace(/^\./, "");
+      const resourceType = String(item.resourceType || "image");
+      const fallbackName = `image-${i + 1}.${format}`;
+      const entryName = sanitizeFilename(item.name || fallbackName, fallbackName);
+
+      const signedUrl = cloudinary.url(publicId, {
+        resource_type: resourceType,
+        type: "upload",
+        format,
+        secure: true,
+        sign_url: true,
+      });
+
+      const fileResponse = await axios({
+        method: "GET",
+        url: signedUrl,
+        responseType: "arraybuffer",
+        timeout: 30000,
+      });
+
+      archive.append(Buffer.from(fileResponse.data), { name: entryName });
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error("Selected ZIP download error:", error);
     next(error);
   }
 };
@@ -187,4 +281,5 @@ const imagesToPDF = async (req, res, next) => {
 module.exports = {
   extract,
   imagesToPDF,
+  downloadExtractedSelection,
 };

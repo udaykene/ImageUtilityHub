@@ -1,6 +1,6 @@
 const { PDFDocument } = require("pdf-lib");
 const sharp = require("sharp");
-const { createCanvas } = require("@napi-rs/canvas");
+const crypto = require("crypto");
 
 const normalizePageSize = (pageSize = "A4") => {
   const value = String(pageSize).trim().toLowerCase();
@@ -18,8 +18,103 @@ const normalizeOrientation = (orientation = "portrait") => {
   return value === "landscape" ? "landscape" : "portrait";
 };
 
+const getImageObject = (page, imageId) =>
+  new Promise((resolve) => {
+    let settled = false;
+    const done = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+
+    try {
+      page.objs.get(imageId, (img) => done(img || null));
+      setTimeout(() => done(null), 2000);
+    } catch {
+      done(null);
+    }
+  });
+
+const toImageBuffer = async (imageLike) => {
+  if (!imageLike) return null;
+
+  if (Buffer.isBuffer(imageLike)) {
+    const metadata = await sharp(imageLike).metadata();
+    return {
+      buffer: imageLike,
+      mimeType: `image/${metadata.format || "png"}`,
+      extension: metadata.format === "jpeg" ? "jpg" : metadata.format || "png",
+      width: metadata.width || null,
+      height: metadata.height || null,
+    };
+  }
+
+  const width = imageLike.width || imageLike.w;
+  const height = imageLike.height || imageLike.h;
+  const raw = imageLike.data;
+
+  if (raw && width && height) {
+    const pixelCount = width * height;
+    const channels = Math.max(1, Math.round(raw.length / pixelCount));
+
+    if (![1, 2, 3, 4].includes(channels)) return null;
+
+    let normalizedRaw;
+    let normalizedChannels;
+
+    if (channels === 2) {
+      // Convert grayscale+alpha to RGBA for reliable encoding.
+      normalizedRaw = Buffer.alloc(pixelCount * 4);
+      for (let i = 0; i < pixelCount; i++) {
+        const gray = raw[i * 2];
+        const alpha = raw[i * 2 + 1];
+        const idx = i * 4;
+        normalizedRaw[idx] = gray;
+        normalizedRaw[idx + 1] = gray;
+        normalizedRaw[idx + 2] = gray;
+        normalizedRaw[idx + 3] = alpha;
+      }
+      normalizedChannels = 4;
+    } else {
+      normalizedRaw = Buffer.from(raw);
+      normalizedChannels = channels;
+    }
+
+    const encoded = await sharp(normalizedRaw, {
+      raw: { width, height, channels: normalizedChannels },
+    })
+      .png()
+      .toBuffer();
+
+    return {
+      buffer: encoded,
+      mimeType: "image/png",
+      extension: "png",
+      width,
+      height,
+    };
+  }
+
+  if (typeof imageLike.src === "string" && imageLike.src.startsWith("data:")) {
+    const [, mimeType, encodedPart] =
+      imageLike.src.match(/^data:(.*?);base64,(.*)$/) || [];
+    if (!mimeType || !encodedPart) return null;
+    const data = Buffer.from(encodedPart, "base64");
+    const metadata = await sharp(data).metadata();
+    return {
+      buffer: data,
+      mimeType,
+      extension: metadata.format === "jpeg" ? "jpg" : metadata.format || "png",
+      width: metadata.width || null,
+      height: metadata.height || null,
+    };
+  }
+
+  return null;
+};
+
 /**
- * Extract images from PDF
+ * Extract embedded images from PDF (not rendered pages)
  */
 const extractImagesFromPDF = async (buffer) => {
   try {
@@ -35,7 +130,6 @@ const extractImagesFromPDF = async (buffer) => {
       modificationDate: pdfDoc.getModificationDate() || null,
     };
 
-    // Render each PDF page to PNG so extraction returns usable image files.
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const loadingTask = pdfjs.getDocument({
       data: new Uint8Array(buffer),
@@ -44,23 +138,53 @@ const extractImagesFromPDF = async (buffer) => {
     const pdf = await loadingTask.promise;
     const images = [];
 
+    const seenHashes = new Set();
+    const imageOps = new Set([
+      pdfjs.OPS.paintImageXObject,
+      pdfjs.OPS.paintJpegXObject,
+      pdfjs.OPS.paintInlineImageXObject,
+    ]);
+
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = createCanvas(
-        Math.max(1, Math.ceil(viewport.width)),
-        Math.max(1, Math.ceil(viewport.height))
-      );
-      const context = canvas.getContext("2d");
-      await page.render({ canvasContext: context, viewport }).promise;
+      const operatorList = await page.getOperatorList();
 
-      const imageBuffer = canvas.toBuffer("image/png");
-      images.push({
-        name: `page-${pageNum}.png`,
-        mimeType: "image/png",
-        sizeBytes: imageBuffer.length,
-        buffer: imageBuffer,
-      });
+      for (let i = 0; i < operatorList.fnArray.length; i++) {
+        const fn = operatorList.fnArray[i];
+        if (!imageOps.has(fn)) continue;
+
+        const args = operatorList.argsArray[i] || [];
+        let imageObject = null;
+
+        if (fn === pdfjs.OPS.paintInlineImageXObject) {
+          imageObject = args[0] || null;
+        } else {
+          const imageId = args[0];
+          if (!imageId) continue;
+          imageObject = await getImageObject(page, imageId);
+        }
+
+        const converted = await toImageBuffer(imageObject);
+        if (!converted) continue;
+
+        const hash = crypto
+          .createHash("sha1")
+          .update(converted.buffer)
+          .digest("hex");
+        if (seenHashes.has(hash)) continue;
+        seenHashes.add(hash);
+
+        const index = images.length + 1;
+        images.push({
+          name: `image-${index}.${converted.extension}`,
+          mimeType: converted.mimeType,
+          sizeBytes: converted.buffer.length,
+          width: converted.width,
+          height: converted.height,
+          sourcePage: pageNum,
+          buffer: converted.buffer,
+        });
+      }
     }
 
     return {

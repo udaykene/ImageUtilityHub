@@ -13,7 +13,11 @@ import {
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
 import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
-import { extractImagesFromPDF, downloadFile } from "@/services/api";
+import {
+  extractImagesFromPDF,
+  downloadFile,
+  downloadSelectedExtractedImages,
+} from "@/services/api";
 
 export default function Extract() {
   const [file, setFile] = useState(null);
@@ -21,6 +25,11 @@ export default function Extract() {
   const [result, setResult] = useState(null);
   const [progress, setProgress] = useState(0);
   const [selectedImages, setSelectedImages] = useState([]);
+  const selectedImageObjects = (result?.images || []).filter((img) =>
+    selectedImages.includes(img.publicId),
+  );
+  const primaryShareUrl =
+    selectedImageObjects[0]?.cloudinaryUrl || result?.images?.[0]?.cloudinaryUrl;
 
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
@@ -38,6 +47,7 @@ export default function Extract() {
       const data = await extractImagesFromPDF(file);
       setProgress(100);
       setResult(data.data);
+      setSelectedImages((data.data?.images || []).map((img) => img.publicId));
     } catch (error) {
       console.error("Extraction failed:", error);
       alert("Failed to extract images. Please try again with a different PDF.");
@@ -46,17 +56,17 @@ export default function Extract() {
     }
   };
 
-  const toggleImageSelection = (name) => {
+  const toggleImageSelection = (publicId) => {
     setSelectedImages((prev) =>
-      prev.includes(name)
-        ? prev.filter((img) => img !== name)
-        : [...prev, name],
+      prev.includes(publicId)
+        ? prev.filter((img) => img !== publicId)
+        : [...prev, publicId],
     );
   };
 
   const selectAll = () => {
     if (result?.images) {
-      setSelectedImages(result.images.map((img) => img.name));
+      setSelectedImages(result.images.map((img) => img.publicId));
     }
   };
 
@@ -81,12 +91,12 @@ export default function Extract() {
               <FileImage className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
-              PDF Page Extraction
+              PDF Image Extraction
             </h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl">
-            Extract each PDF page as an image and download everything in one
-            ZIP package.
+            Extract embedded images from PDF files and download only the files
+            you choose.
           </p>
         </motion.div>
 
@@ -198,8 +208,25 @@ export default function Extract() {
                 </button>
                 <button
                   onClick={async () => {
+                    if (!result?.images?.length) return;
+                    const selected = result.images.filter((img) =>
+                      selectedImages.includes(img.publicId),
+                    );
+                    if (!selected.length) {
+                      alert("Please select at least one image to download.");
+                      return;
+                    }
+
                     try {
-                      await downloadFile(result.cloudinaryUrl);
+                      await downloadSelectedExtractedImages(
+                        selected.map((img) => ({
+                          publicId: img.publicId,
+                          resourceType: img.resourceType,
+                          format: img.format,
+                          name: img.name,
+                        })),
+                        `${file?.name?.replace(/\.pdf$/i, "") || "extracted-images"}-selected.zip`,
+                      );
                     } catch (error) {
                       console.error("ZIP download failed:", error);
                       alert(
@@ -210,7 +237,7 @@ export default function Extract() {
                   className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 >
                   <Download className="size-5" />
-                  Download ZIP
+                  Download Selected ZIP
                 </button>
               </div>
             </div>
@@ -232,17 +259,17 @@ export default function Extract() {
                     <motion.div
                       key={idx}
                       whileHover={{ y: -4 }}
-                      onClick={() => toggleImageSelection(img.name)}
+                      onClick={() => toggleImageSelection(img.publicId)}
                       className={`group relative glass-card rounded-2xl p-3 cursor-pointer transition-all border-2 ${
-                        selectedImages.includes(img.name)
+                        selectedImages.includes(img.publicId)
                           ? "border-primary bg-primary/5"
                           : "border-transparent hover:border-white/10"
                       }`}
                     >
                       <div className="aspect-square rounded-xl bg-slate-100 dark:bg-white/5 mb-3 flex items-center justify-center overflow-hidden">
-                        {img.url ? (
+                        {img.cloudinaryUrl ? (
                           <img
-                            src={`${import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000"}${img.url}`}
+                            src={img.cloudinaryUrl}
                             alt={img.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
@@ -254,8 +281,20 @@ export default function Extract() {
                         {img.name}
                       </p>
                       <p className="text-[10px] text-slate-400">{img.size}</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadFile(img.cloudinaryUrl).catch((error) => {
+                            console.error("Single image download failed:", error);
+                            alert("Failed to download image. Please try again.");
+                          });
+                        }}
+                        className="mt-2 w-full text-[10px] py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold transition"
+                      >
+                        Download
+                      </button>
 
-                      {selectedImages.includes(img.name) && (
+                      {selectedImages.includes(img.publicId) && (
                         <div className="absolute top-2 right-2 p-1 bg-primary rounded-full text-white shadow-md">
                           <CheckSquare className="size-3" />
                         </div>
@@ -270,18 +309,15 @@ export default function Extract() {
                 <div className="glass-card rounded-3xl p-6 sticky top-24">
                   <h3 className="font-bold mb-4 flex items-center gap-2">
                     <MessageCircle className="size-5 text-primary" />
-                    Share ZIP Package
+                    Share Image Link
                   </h3>
 
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() =>
-                          shareToWhatsApp(
-                            result.cloudinaryUrl,
-                            "PDF Images",
-                            "application/zip",
-                          )
+                          primaryShareUrl &&
+                          shareToWhatsApp(primaryShareUrl, "Extracted Image")
                         }
                         className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-green-600/10 hover:bg-green-600/20 text-green-600 transition-all border border-green-600/10"
                       >
@@ -292,11 +328,8 @@ export default function Extract() {
                       </button>
                       <button
                         onClick={() =>
-                          shareByEmail(
-                            result.cloudinaryUrl,
-                            "Extracted PDF Images",
-                            "application/zip",
-                          )
+                          primaryShareUrl &&
+                          shareByEmail(primaryShareUrl, "Extracted Image")
                         }
                         className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 text-red-600 transition-all border border-red-600/10"
                       >
@@ -309,7 +342,7 @@ export default function Extract() {
 
                     <button
                       onClick={() =>
-                        shareToDrive(result.cloudinaryUrl, "application/zip")
+                        primaryShareUrl && shareToDrive(primaryShareUrl)
                       }
                       className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-all border border-yellow-500/10"
                     >
@@ -343,8 +376,8 @@ export default function Extract() {
             <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
               <FileImage className="size-4" />
               <p>
-                Secure extraction: pages are rendered to images and packaged as
-                ZIP for download.
+                Secure extraction: embedded PDF images are extracted and can be
+                downloaded individually or as a selected ZIP.
               </p>
             </div>
           </motion.div>

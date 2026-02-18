@@ -99,6 +99,30 @@ export const extractImagesFromPDF = async (file) => {
 };
 
 /**
+ * Download selected extracted images as ZIP
+ */
+export const downloadSelectedExtractedImages = async (
+  images,
+  zipName = "extracted-images.zip",
+) => {
+  const response = await api.post(
+    "/extract/download",
+    { images, zipName },
+    { responseType: "blob" },
+  );
+
+  const objectUrl = window.URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = zipName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(objectUrl);
+};
+
+/**
  * Create PDF from images
  */
 export const createPDFFromImages = async (files, options = {}) => {
