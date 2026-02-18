@@ -30,6 +30,7 @@ export default function Extract() {
   );
   const primaryShareUrl =
     selectedImageObjects[0]?.cloudinaryUrl || result?.images?.[0]?.cloudinaryUrl;
+  const isPageFallback = result?.fallbackUsed;
 
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
@@ -194,9 +195,13 @@ export default function Extract() {
                   Extraction Complete!
                 </h2>
                 <p className="text-slate-500">
-                  Successfully extracted <b>{result.imageCount}</b> images from
+                  Successfully extracted <b>{result.imageCount}</b>{" "}
+                  {isPageFallback ? "page images" : "embedded images"} from
                   your PDF.
                 </p>
+                {result?.notice && (
+                  <p className="text-amber-400 text-sm mt-2">{result.notice}</p>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <button

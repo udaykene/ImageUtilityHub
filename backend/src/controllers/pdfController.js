@@ -1,5 +1,6 @@
 const {
   extractImagesFromPDF,
+  renderPdfPagesAsImages,
   createPDFFromImages,
 } = require("../utils/pdfProcessor");
 const {
@@ -80,6 +81,18 @@ const extract = async (req, res, next) => {
 
     // Extract embedded images from PDF
     const pdfData = await extractImagesFromPDF(req.file.buffer);
+    let extractionMode = "embedded";
+    let extractionNotice = null;
+    let filesToUpload = pdfData.images;
+
+    if (!filesToUpload.length) {
+      const renderedPages = await renderPdfPagesAsImages(req.file.buffer);
+      filesToUpload = renderedPages.images;
+      extractionMode = "page_fallback";
+      extractionNotice =
+        "No embedded images were found in this PDF. Showing rendered pages instead.";
+    }
+
     const deleteAfterHours =
       parseInt(process.env.CLOUDINARY_AUTO_DELETE_HOURS, 10) || 24;
 
@@ -92,9 +105,9 @@ const extract = async (req, res, next) => {
     let cursor = 0;
 
     const worker = async () => {
-      while (cursor < pdfData.images.length) {
+      while (cursor < filesToUpload.length) {
         const index = cursor++;
-        const image = pdfData.images[index];
+        const image = filesToUpload[index];
         const extension =
           image.mimeType === "image/jpeg"
             ? "jpg"
@@ -140,13 +153,16 @@ const extract = async (req, res, next) => {
     res.json({
       success: true,
       message:
-        uploadedImages.length > 0
+        extractionMode === "embedded"
           ? "PDF images extracted successfully"
-          : "No embedded images found in this PDF",
+          : "No embedded images found. Rendered PDF pages are shown instead.",
       data: {
         pageCount: pdfData.pageCount,
         imageCount: uploadedImages.length,
         images: uploadedImages,
+        extractionMode,
+        fallbackUsed: extractionMode !== "embedded",
+        notice: extractionNotice,
         expiresIn: `${deleteAfterHours} hours`,
         info: pdfData.info,
       },

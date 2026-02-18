@@ -1,6 +1,7 @@
 const { PDFDocument } = require("pdf-lib");
 const sharp = require("sharp");
 const crypto = require("crypto");
+const { createCanvas } = require("@napi-rs/canvas");
 
 const normalizePageSize = (pageSize = "A4") => {
   const value = String(pageSize).trim().toLowerCase();
@@ -200,6 +201,51 @@ const extractImagesFromPDF = async (buffer) => {
 };
 
 /**
+ * Render each PDF page to PNG image (fallback when no embedded images are found)
+ */
+const renderPdfPagesAsImages = async (buffer) => {
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      disableWorker: true,
+    });
+    const pdf = await loadingTask.promise;
+    const pages = [];
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 2 });
+      const width = Math.max(1, Math.ceil(viewport.width));
+      const height = Math.max(1, Math.ceil(viewport.height));
+      const canvas = createCanvas(width, height);
+      const context = canvas.getContext("2d");
+      await page.render({ canvasContext: context, viewport }).promise;
+
+      const imageBuffer = canvas.toBuffer("image/png");
+      pages.push({
+        name: `page-${pageNum}.png`,
+        mimeType: "image/png",
+        sizeBytes: imageBuffer.length,
+        width,
+        height,
+        sourcePage: pageNum,
+        buffer: imageBuffer,
+      });
+    }
+
+    return {
+      pageCount: pdf.numPages,
+      imageCount: pages.length,
+      images: pages,
+    };
+  } catch (error) {
+    console.error("Error rendering PDF pages as images:", error);
+    throw new Error("Failed to render PDF pages as images");
+  }
+};
+
+/**
  * Create PDF from images
  */
 const createPDFFromImages = async (imageBuffers, options = {}) => {
@@ -291,5 +337,6 @@ const createPDFFromImages = async (imageBuffers, options = {}) => {
 
 module.exports = {
   extractImagesFromPDF,
+  renderPdfPagesAsImages,
   createPDFFromImages,
 };
