@@ -29,48 +29,62 @@ app.use("/api", imageRoutes);
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Frontend URL: ${process.env.FRONTEND_URL}`);
-  console.log(
-    `☁️  Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME}`
-  );
-  console.log(
-    `🗑️  Auto-delete after: ${process.env.CLOUDINARY_AUTO_DELETE_HOURS} hours`
-  );
-});
+let server = null;
 
-// Heartbeat to keep process alive in case of event loop issues
-setInterval(() => {
-  if (process.env.NODE_ENV === "development") {
-    // console.log("💓 Heartbeat - Server is alive");
-  }
-}, 30000);
+// Start server only for local/non-Vercel runtime
+if (!process.env.VERCEL) {
+  server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
+    console.log(
+      `Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME}`
+    );
+    console.log(
+      `Auto-delete after: ${process.env.CLOUDINARY_AUTO_DELETE_HOURS} hours`
+    );
+  });
+}
+
+// Heartbeat for local debugging only
+if (!process.env.VERCEL) {
+  setInterval(() => {
+    if (process.env.NODE_ENV === "development") {
+      // console.log("Heartbeat - Server is alive");
+    }
+  }, 30000);
+}
 
 // Process event listeners for debugging
 process.on("SIGINT", () => {
-  console.log("🛑 Received SIGINT (Ctrl+C). Shutting down...");
-  server.close(() => {
-    console.log("👋 Server closed. Exit.");
+  console.log("Received SIGINT (Ctrl+C). Shutting down...");
+  if (server) {
+    server.close(() => {
+      console.log("Server closed. Exit.");
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 process.on("SIGTERM", () => {
-  console.log("🛑 Received SIGTERM. Shutting down...");
-  server.close(() => {
+  console.log("Received SIGTERM. Shutting down...");
+  if (server) {
+    server.close(() => {
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("💥 Uncaught Exception:", err);
+  console.error("Uncaught Exception:", err);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("💥 Unhandled Rejection at:", promise, "reason:", reason);
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
   process.exit(1);
 });
 
