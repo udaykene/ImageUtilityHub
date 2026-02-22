@@ -8,6 +8,11 @@ import Convert from "./pages/Convert.jsx";
 import Resize from "./pages/Resize.jsx";
 import Extract from "./pages/Extract.jsx";
 import ImagesToPDF from "./pages/ImagesToPDF.jsx";
+import Contact from "./pages/Contact.jsx";
+import Privacy from "./pages/Privacy.jsx";
+import Terms from "./pages/Terms.jsx";
+import ApiDocs from "./pages/ApiDocs.jsx";
+import Support from "./pages/Support.jsx";
 
 function App() {
   return (
@@ -23,6 +28,11 @@ function App() {
             <Route path="/resize" element={<Resize />} />
             <Route path="/extract" element={<Extract />} />
             <Route path="/images-to-pdf" element={<ImagesToPDF />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/api" element={<ApiDocs />} />
+            <Route path="/support" element={<Support />} />
           </Routes>
         </main>
         <Footer />

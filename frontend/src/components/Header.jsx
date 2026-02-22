@@ -1,7 +1,7 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Sparkles, Mail } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { Link, useLocation } from "react-router-dom";
+import { Moon, Sun, Sparkles, Mail } from "lucide-react";
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(true);
@@ -9,20 +9,20 @@ export default function Header() {
 
   useEffect(() => {
     // Set dark mode as default
-    document.documentElement.classList.add('dark');
+    document.documentElement.classList.add("dark");
   }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
+    document.documentElement.classList.toggle("dark");
   };
 
   const navItems = [
-    { path: '/compress', label: 'Compress' },
-    { path: '/convert', label: 'Convert' },
-    { path: '/resize', label: 'Resize' },
-    { path: '/extract', label: 'Extract' },
-    { path: '/images-to-pdf', label: 'To PDF' },
+    { path: "/compress", label: "Compress" },
+    { path: "/convert", label: "Convert" },
+    { path: "/resize", label: "Resize" },
+    { path: "/extract", label: "Extract" },
+    { path: "/images-to-pdf", label: "To PDF" },
   ];
 
   return (
@@ -55,8 +55,8 @@ export default function Header() {
               to={item.path}
               className={`text-sm font-medium transition-colors ${
                 location.pathname === item.path
-                  ? 'text-primary'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-primary'
+                  ? "text-primary"
+                  : "text-slate-600 dark:text-slate-300 hover:text-primary"
               }`}
             >
               {item.label}
@@ -67,15 +67,19 @@ export default function Header() {
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Contact/Feedback Link */}
-          <motion.a
-            href="mailto:support@formatflow.com"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="hidden sm:flex! items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-sm font-medium text-slate-600 dark:text-slate-300"
-          >
-            <Mail className="size-4" />
-            <span>Contact</span>
-          </motion.a>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              to="/contact"
+              className={`hidden sm:flex! items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-sm font-medium ${
+                location.pathname === "/contact"
+                  ? "text-primary border-primary/30"
+                  : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              <Mail className="size-4" />
+              <span>Contact</span>
+            </Link>
+          </motion.div>
         </div>
       </div>
     </motion.header>
