@@ -25,6 +25,7 @@ app.get("/health", (req, res) => {
 
 // API Routes
 app.use("/api", imageRoutes);
+app.use("/api/share", require("./routes/shareRoutes"));
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

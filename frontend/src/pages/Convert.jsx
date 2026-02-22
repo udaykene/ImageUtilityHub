@@ -13,6 +13,8 @@ import {
 import FileUpload from "@/components/FileUpload";
 import { convertImage, downloadFile, getDownloadUrl } from "@/services/api";
 import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
+import ShareModal from "@/components/ShareModal";
+import { Send } from "lucide-react";
 
 const formats = [
   {
@@ -43,6 +45,7 @@ export default function Convert() {
   const [converting, setConverting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const handleFileSelect = (selectedFile) => {
     setFile(selectedFile);
@@ -269,6 +272,14 @@ export default function Convert() {
                   {/* Share Buttons */}
                   {result && !converting && (
                     <div className="pt-4 border-t border-white/5 space-y-3">
+                      <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-r from-green-600 to-cyan-600 text-white font-bold shadow-lg shadow-cyan-600/20 hover:opacity-90 transition-all"
+                      >
+                        <Send className="size-5" /> Direct Share
+                        (WhatsApp/Email)
+                      </button>
+
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
@@ -280,11 +291,11 @@ export default function Convert() {
                               "Check out my converted image!",
                             )
                           }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white transition-all border border-green-600/20"
                         >
                           <MessageCircle className="size-5" />
                           <span className="text-xs font-bold">
-                            WhatsApp / Share
+                            Native WhatsApp
                           </span>
                         </motion.button>
 
@@ -298,32 +309,18 @@ export default function Convert() {
                               "My Converted Image",
                             )
                           }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
+                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all border border-red-600/20"
                         >
                           <Mail className="size-5" />
-                          <span className="text-xs font-bold">Email</span>
+                          <span className="text-xs font-bold">
+                            Native Email
+                          </span>
                         </motion.button>
                       </div>
 
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() =>
-                          shareToDrive(
-                            result.data?.cloudinaryUrl || result.cloudinaryUrl,
-                          )
-                        }
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
-                      >
-                        <Cloud className="size-5" />
-                        <span className="text-sm font-bold">
-                          Add to Google Drive
-                        </span>
-                      </motion.button>
-
                       <p className="text-[10px] text-center text-slate-500 italic">
-                        Tip: On Desktop, images are copied to your clipboard
-                        automatically. Just Paste (Ctrl+V) to share!
+                        Tip: Direct Share sends from our server. Native Share
+                        opens your apps.
                       </p>
                     </div>
                   )}
@@ -349,6 +346,12 @@ export default function Convert() {
           </motion.div>
         </div>
       </div>
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        imageUrl={result?.data?.cloudinaryUrl || result?.cloudinaryUrl}
+        title="My Converted Image"
+      />
     </div>
   );
 }

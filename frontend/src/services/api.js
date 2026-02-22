@@ -186,7 +186,8 @@ export const downloadFile = async (filenameOrUrl) => {
   const url = getDownloadUrl(filenameOrUrl);
   const fallbackName =
     typeof filenameOrUrl === "string" &&
-    (filenameOrUrl.startsWith("http://") || filenameOrUrl.startsWith("https://"))
+    (filenameOrUrl.startsWith("http://") ||
+      filenameOrUrl.startsWith("https://"))
       ? getFilenameFromUrl(filenameOrUrl)
       : filenameOrUrl;
 
@@ -211,6 +212,22 @@ export const downloadFile = async (filenameOrUrl) => {
     console.error("Download failed:", error);
     throw error;
   }
+};
+
+/**
+ * Share image via Email
+ */
+export const shareToEmailApi = async (data) => {
+  const response = await api.post("/share/email", data);
+  return response.data;
+};
+
+/**
+ * Share image via WhatsApp Cloud API
+ */
+export const shareToWhatsAppApi = async (data) => {
+  const response = await api.post("/share/whatsapp", data);
+  return response.data;
 };
 
 export default api;
