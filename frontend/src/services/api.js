@@ -182,13 +182,17 @@ const getFilenameFromUrl = (url, fallback = `download-${Date.now()}`) => {
  * Download file
  * Works with both Cloudinary URLs and API endpoints
  */
-export const downloadFile = async (filenameOrUrl) => {
+export const downloadFile = async (filenameOrUrl, options = {}) => {
   const url = getDownloadUrl(filenameOrUrl);
   const fallbackName =
     typeof filenameOrUrl === "string" &&
     (filenameOrUrl.startsWith("http://") || filenameOrUrl.startsWith("https://"))
       ? getFilenameFromUrl(filenameOrUrl)
       : filenameOrUrl;
+  const overrideName =
+    typeof options.filename === "string" && options.filename.trim().length > 0
+      ? options.filename.trim()
+      : null;
 
   try {
     // Force a same-origin blob URL download so browsers don't navigate to Cloudinary.
@@ -201,7 +205,7 @@ export const downloadFile = async (filenameOrUrl) => {
     const objectUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = objectUrl;
-    link.download = fallbackName || `download-${Date.now()}`;
+    link.download = overrideName || fallbackName || `download-${Date.now()}`;
     link.style.display = "none";
     document.body.appendChild(link);
     link.click();

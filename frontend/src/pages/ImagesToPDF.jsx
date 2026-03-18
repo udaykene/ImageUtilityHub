@@ -78,7 +78,7 @@ export default function ImagesToPDF() {
   const handleDownload = async () => {
     if (result && result.cloudinaryUrl) {
       try {
-        await downloadFile(result.cloudinaryUrl);
+        await downloadFile(result.cloudinaryUrl, { filename: "output.pdf" });
       } catch (error) {
         console.error("PDF download failed:", error);
         setError("Failed to download PDF. Please try again.");
