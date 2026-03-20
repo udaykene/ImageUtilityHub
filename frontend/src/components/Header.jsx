@@ -12,10 +12,7 @@ export default function Header() {
     document.documentElement.classList.add("dark");
   }, []);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
-  };
+
 
   const navItems = [
     { path: "/compress", label: "Compress" },

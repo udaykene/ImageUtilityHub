@@ -11,8 +11,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
-import { convertImage, downloadFile, getDownloadUrl } from "@/services/api";
-import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
+import { convertImage, downloadFile } from "@/services/api";
+import ShareButton from "@/components/ShareButton";
 
 const formats = [
   {
@@ -268,63 +268,12 @@ export default function Convert() {
 
                   {/* Share Buttons */}
                   {result && !converting && (
-                    <div className="pt-4 border-t border-white/5 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            shareToWhatsApp(
-                              result.data?.cloudinaryUrl ||
-                                result.cloudinaryUrl,
-                              "Check out my converted image!",
-                            )
-                          }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
-                        >
-                          <MessageCircle className="size-5" />
-                          <span className="text-xs font-bold">
-                            WhatsApp / Share
-                          </span>
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            shareByEmail(
-                              result.data?.cloudinaryUrl ||
-                                result.cloudinaryUrl,
-                              "My Converted Image",
-                            )
-                          }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
-                        >
-                          <Mail className="size-5" />
-                          <span className="text-xs font-bold">Email</span>
-                        </motion.button>
-                      </div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() =>
-                          shareToDrive(
-                            result.data?.cloudinaryUrl || result.cloudinaryUrl,
-                          )
-                        }
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
-                      >
-                        <Cloud className="size-5" />
-                        <span className="text-sm font-bold">
-                          Add to Google Drive
-                        </span>
-                      </motion.button>
-
-                      <p className="text-[10px] text-center text-slate-500 italic">
-                        Tip: On Desktop, images are copied to your clipboard
-                        automatically. Just Paste (Ctrl+V) to share!
-                      </p>
+                    <div className="pt-4 border-t border-white/5 flex justify-center">
+                      <ShareButton 
+                        cloudinaryUrl={result.data?.cloudinaryUrl || result.cloudinaryUrl}
+                        filename={file?.name}
+                        mimeType={file?.type}
+                      />
                     </div>
                   )}
                 </div>

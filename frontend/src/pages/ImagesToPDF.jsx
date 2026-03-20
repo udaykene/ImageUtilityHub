@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
 import { createPDFFromImages, downloadFile } from "@/services/api";
-import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
+import ShareButton from "@/components/ShareButton";
 
 export default function ImagesToPDF() {
   const [images, setImages] = useState([]);
@@ -396,61 +396,12 @@ export default function ImagesToPDF() {
 
                   {/* Share Buttons */}
                   {result && !generating && (
-                    <div className="pt-4 border-t border-white/5 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            shareToWhatsApp(
-                              result.cloudinaryUrl,
-                              "My PDF Document",
-                              "application/pdf",
-                            )
-                          }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all shadow-lg shadow-green-600/20"
-                        >
-                          <MessageCircle className="size-5" />
-                          <span className="text-xs font-bold">
-                            WhatsApp / Share
-                          </span>
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            shareByEmail(
-                              result.cloudinaryUrl,
-                              "My PDF File",
-                              "application/pdf",
-                            )
-                          }
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg shadow-red-600/20"
-                        >
-                          <Mail className="size-5" />
-                          <span className="text-xs font-bold">Email</span>
-                        </motion.button>
-                      </div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() =>
-                          shareToDrive(result.cloudinaryUrl, "application/pdf")
-                        }
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all shadow-lg shadow-yellow-600/20"
-                      >
-                        <Cloud className="size-5" />
-                        <span className="text-sm font-bold">
-                          Add to Google Drive
-                        </span>
-                      </motion.button>
-
-                      <p className="text-[10px] text-center text-slate-500 italic">
-                        Tip: On Desktop, click the file link to open it, then
-                        drag it into the new tab to share without downloading.
-                      </p>
+                    <div className="pt-4 border-t border-white/5 flex justify-center">
+                      <ShareButton 
+                        cloudinaryUrl={result.cloudinaryUrl}
+                        filename="output.pdf"
+                        mimeType="application/pdf"
+                      />
                     </div>
                   )}
                 </div>

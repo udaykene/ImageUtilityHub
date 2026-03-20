@@ -11,7 +11,7 @@ const {
   imagesToPDF,
   downloadExtractedSelection,
 } = require("../controllers/pdfController");
-const { download } = require("../controllers/downloadController");
+const { download, shareImageProxy } = require("../controllers/downloadController");
 
 // Routes
 router.post("/compress", upload.single("image"), compress);
@@ -22,5 +22,6 @@ router.post("/extract/download", downloadExtractedSelection);
 router.post("/images-to-pdf", upload.array("images", 20), imagesToPDF);
 router.get("/download", download);
 router.get("/download/:filename", download);
+router.get("/s/:encodedPath", shareImageProxy);
 
 module.exports = router;

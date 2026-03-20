@@ -12,7 +12,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
-import { shareToWhatsApp, shareByEmail, shareToDrive } from "@/utils/share";
+import ShareButton from "@/components/ShareButton";
 import {
   extractImagesFromPDF,
   downloadFile,
@@ -317,52 +317,12 @@ export default function Extract() {
                     Share Image Link
                   </h3>
 
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() =>
-                          primaryShareUrl &&
-                          shareToWhatsApp(primaryShareUrl, "Extracted Image")
-                        }
-                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-green-600/10 hover:bg-green-600/20 text-green-600 transition-all border border-green-600/10"
-                      >
-                        <MessageCircle className="size-6" />
-                        <span className="text-[10px] font-black uppercase">
-                          WhatsApp
-                        </span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          primaryShareUrl &&
-                          shareByEmail(primaryShareUrl, "Extracted Image")
-                        }
-                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 text-red-600 transition-all border border-red-600/10"
-                      >
-                        <Mail className="size-6" />
-                        <span className="text-[10px] font-black uppercase">
-                          Email
-                        </span>
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        primaryShareUrl && shareToDrive(primaryShareUrl)
-                      }
-                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 transition-all border border-yellow-500/10"
-                    >
-                      <Cloud className="size-5" />
-                      <span className="text-xs font-black uppercase tracking-wider">
-                        Save to Google Drive
-                      </span>
-                    </button>
-
-                    <div className="pt-4 mt-4 border-t border-white/5">
-                      <p className="text-[10px] text-slate-500 italic text-center leading-relaxed">
-                        Tip: You can also drag the ZIP file directly into your
-                        apps after downloading it.
-                      </p>
-                    </div>
+                  <div className="flex justify-center pt-4">
+                    <ShareButton 
+                      cloudinaryUrl={primaryShareUrl}
+                      filename="Extracted Images"
+                      mimeType="application/zip"
+                    />
                   </div>
                 </div>
               </div>

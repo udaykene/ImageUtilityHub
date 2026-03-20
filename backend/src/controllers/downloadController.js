@@ -286,4 +286,46 @@ const download = async (req, res, next) => {
   }
 };
 
-module.exports = { download };
+/**
+ * Share image proxy to hide Cloudinary Domain
+ */
+const shareImageProxy = async (req, res, next) => {
+  try {
+    const { encodedPath } = req.params;
+    const { dl } = req.query;
+
+    const decodedPath = Buffer.from(encodedPath, "base64url").toString("utf8");
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
+    const attachmentPath = dl === "1" ? "fl_attachment/" : "";
+    const fullUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${attachmentPath}${decodedPath}`;
+
+    const response = await axios({
+      method: "GET",
+      url: fullUrl,
+      responseType: "stream",
+      timeout: 30000,
+    });
+
+    const baseName = path.basename(decodedPath) || "download";
+    if (dl === "1") {
+      res.setHeader("Content-Disposition", `attachment; filename="${baseName}"`);
+    } else {
+      res.setHeader("Content-Disposition", `inline; filename="${baseName}"`);
+    }
+    res.setHeader(
+      "Content-Type",
+      response.headers["content-type"] || "application/octet-stream"
+    );
+
+    response.data.pipe(res);
+  } catch (error) {
+    console.error("share proxy error:", error.message);
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ success: false, message: "File not found" });
+    }
+    next(error);
+  }
+};
+
+module.exports = { download, shareImageProxy };

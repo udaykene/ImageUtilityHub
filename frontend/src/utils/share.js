@@ -3,6 +3,35 @@ const isMobile = () =>
     navigator.userAgent,
   );
 
+import { getDownloadUrl, API_BASE_URL } from "../services/api";
+
+/**
+ * Helper to force a Cloudinary URL to download as an attachment
+ */
+export const getShareableUrl = (url) => {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "res.cloudinary.com") {
+      const parts = parsed.pathname.split("/");
+      const uploadIndex = parts.indexOf("upload");
+      if (uploadIndex !== -1) {
+        let pathParts = parts.slice(uploadIndex + 1);
+        if (pathParts[0] === "fl_attachment") {
+          pathParts.shift();
+        }
+        const decodedPath = pathParts.join("/");
+        const b64 = btoa(decodedPath).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        return `${API_BASE_URL}/s/${b64}?dl=1`;
+      }
+    }
+    return parsed.toString();
+  } catch (err) {
+    console.error("URL parsing failed for getShareableUrl:", err);
+    return url;
+  }
+};
+
 /**
  * Enhanced sharing utility using Web Share API with Cloudinary URLs
  * Works directly with Cloudinary URLs - no download needed!
@@ -16,8 +45,9 @@ export const shareFile = async ({
   if (!cloudinaryUrl) return { success: false, error: "No URL provided" };
 
   try {
-    // 1. Fetch the file from Cloudinary to share it as an actual File object
-    const response = await fetch(cloudinaryUrl);
+    // 1. Fetch the file from Cloudinary (via backend proxy) to share it as an actual File object
+    const proxyUrl = getDownloadUrl(cloudinaryUrl);
+    const response = await fetch(proxyUrl);
     if (!response.ok) throw new Error("Failed to fetch file for sharing");
     const blob = await response.blob();
 
@@ -37,7 +67,12 @@ export const shareFile = async ({
 
     // 3. Fallback to basic share (links) only if file sharing is NOT supported
     if (navigator.share) {
-      await navigator.share({ title, text, url: cloudinaryUrl });
+      const shareableUrl = getShareableUrl(cloudinaryUrl);
+      await navigator.share({
+        title,
+        text: `${text}\n\n(Note: This link will expire in 24 hours)`,
+        url: shareableUrl,
+      });
       return { success: true, method: "link" };
     }
 
@@ -57,7 +92,8 @@ export const shareFile = async ({
  */
 export const copyImageToClipboard = async (cloudinaryUrl) => {
   try {
-    const response = await fetch(cloudinaryUrl);
+    const proxyUrl = getDownloadUrl(cloudinaryUrl);
+    const response = await fetch(proxyUrl);
     const blob = await response.blob();
     const item = new ClipboardItem({ [blob.type]: blob });
     await navigator.clipboard.write([item]);
@@ -69,11 +105,13 @@ export const copyImageToClipboard = async (cloudinaryUrl) => {
 };
 
 /**
- * Copy URL to clipboard
+ * Copy URL to clipboard with expiration text
  */
 export const copyUrlToClipboard = async (url) => {
   try {
-    await navigator.clipboard.writeText(url);
+    const shareableUrl = getShareableUrl(url);
+    const textToCopy = `Here is the processed file:\n${shareableUrl}\n\n(Note: This link will automatically expire in 24 hours)`;
+    await navigator.clipboard.writeText(textToCopy);
     return true;
   } catch (err) {
     console.error("URL copy failed:", err);
@@ -134,11 +172,13 @@ export const shareByEmail = async (
     }
   }
 
+  const shareableUrl = getShareableUrl(cloudinaryUrl);
   const mailtoUrl = `mailto:?subject=${encodeURIComponent(
     subject,
   )}&body=${encodeURIComponent(
-    "Hello,\n\nI processed a file using Image Utility Hub. You can view/download it here:\n\n" +
-      cloudinaryUrl,
+    "Hello,\n\nI processed a file using Image Utility Hub. You can download it here:\n\n" +
+      shareableUrl +
+      "\n\n(Note: This link will automatically expire in 24 hours)",
   )}`;
   window.open(mailtoUrl, "_blank");
   return { success: true };

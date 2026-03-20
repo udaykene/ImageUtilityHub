@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Create axios instance
@@ -186,7 +186,8 @@ export const downloadFile = async (filenameOrUrl, options = {}) => {
   const url = getDownloadUrl(filenameOrUrl);
   const fallbackName =
     typeof filenameOrUrl === "string" &&
-    (filenameOrUrl.startsWith("http://") || filenameOrUrl.startsWith("https://"))
+    (filenameOrUrl.startsWith("http://") ||
+      filenameOrUrl.startsWith("https://"))
       ? getFilenameFromUrl(filenameOrUrl)
       : filenameOrUrl;
   const overrideName =

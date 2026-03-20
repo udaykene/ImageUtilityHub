@@ -33,7 +33,7 @@ let server = null;
 
 // Start server only for local/non-Vercel runtime
 if (!process.env.VERCEL) {
-  server = app.listen(PORT, () => {
+  server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
     console.log(

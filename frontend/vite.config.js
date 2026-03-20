@@ -14,8 +14,14 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // This exposes the project to your local network
+    port: 5173, // Optional: keeps it on your preferred port
     proxy: {
-      "/api": "http://localhost:5000",
+      "/api": {
+        target: "http://0.0.0.0:5000", // Using 0.0.0.0 ensures it catches the backend on the local network
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });
