@@ -32,7 +32,7 @@ export const compressImage = async (file, options = {}) => {
   }
 
   const response = await api.post("/compress", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    // Let the browser set the multipart boundary automatically
   });
   return response.data;
 };
@@ -49,9 +49,7 @@ export const convertImage = async (file, options = {}) => {
   if (options.quality) formData.append("quality", options.quality);
 
   const response = await api.post("/convert", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    // Let the browser set the multipart boundary automatically
   });
 
   return response.data;
@@ -74,9 +72,7 @@ export const resizeImage = async (file, options = {}) => {
   if (options.quality) formData.append("quality", options.quality);
 
   const response = await api.post("/resize", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    // Let the browser set the multipart boundary automatically
   });
 
   return response.data;
@@ -90,9 +86,7 @@ export const extractImagesFromPDF = async (file) => {
   formData.append("image", file);
 
   const response = await api.post("/extract", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    // Let the browser set the multipart boundary automatically
   });
 
   return response.data;
@@ -138,9 +132,7 @@ export const createPDFFromImages = async (files, options = {}) => {
   if (options.quality) formData.append("quality", options.quality);
 
   const response = await api.post("/images-to-pdf", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    // Let the browser set the multipart boundary automatically
   });
 
   return response.data;

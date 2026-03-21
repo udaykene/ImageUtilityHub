@@ -20,12 +20,11 @@ const fileFilter = (req, file, cb) => {
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(
-      new Error(
-        `Invalid file type: ${file.mimetype}. Only images and PDFs are allowed.`
-      ),
-      false
+    const error = new Error(
+      `Invalid file type: ${file.mimetype}. Only images and PDFs are allowed.`
     );
+    error.status = 400;
+    cb(error, false);
   }
 };
 

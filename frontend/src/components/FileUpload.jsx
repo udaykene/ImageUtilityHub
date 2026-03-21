@@ -3,6 +3,45 @@ import { Upload, File, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
+const isHeicFile = (file) => {
+  const type = (file?.type || '').toLowerCase();
+  const name = (file?.name || '').toLowerCase();
+  return type === 'image/heic'
+    || type === 'image/heif'
+    || name.endsWith('.heic')
+    || name.endsWith('.heif');
+};
+
+const parseAccept = (accept) =>
+  (accept || '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+const isAcceptedBy = (file, acceptList) => {
+  if (acceptList.length === 0) return true;
+
+  const type = (file?.type || '').toLowerCase();
+  const name = (file?.name || '').toLowerCase();
+
+  return acceptList.some((token) => {
+    if (token === 'image/*') {
+      return type.startsWith('image/') || isHeicFile(file);
+    }
+    if (token.endsWith('/*')) {
+      const prefix = token.slice(0, -1);
+      return type.startsWith(prefix);
+    }
+    if (token.startsWith('.')) {
+      return name.endsWith(token);
+    }
+    if (token === 'application/pdf') {
+      return type === 'application/pdf' || name.endsWith('.pdf');
+    }
+    return type === token;
+  });
+};
+
 export default function FileUpload({ 
   accept, 
   maxSize = 20, 
@@ -30,17 +69,31 @@ export default function FileUpload({
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    processFiles(files);
-  }, [maxSize, onFileSelect, multiple]);
+    void processFiles(files);
+  }, [maxSize, onFileSelect, multiple, accept]);
 
-  const processFiles = (fileList) => {
+  const processFiles = async (fileList) => {
     const validFiles = [];
+    const acceptList = parseAccept(accept);
     
     for (const file of fileList) {
       const fileSizeMB = file.size / (1024 * 1024);
       
       if (fileSizeMB > maxSize) {
         alert(`File "${file.name}" exceeds ${maxSize}MB limit`);
+        continue;
+      }
+
+      if (!isAcceptedBy(file, acceptList)) {
+        alert(`File "${file.name}" is not supported for this tool.`);
+        continue;
+      }
+
+      if (isHeicFile(file) && acceptList.some((token) => token.startsWith('image/'))) {
+        alert(
+          `File "${file.name}" is in HEIC/HEIF format, which is not supported. ` +
+          `Please convert it to JPG/PNG, or on iPhone set Settings > Camera > Formats > Most Compatible.`
+        );
         continue;
       }
       
@@ -67,7 +120,7 @@ export default function FileUpload({
 
   const handleFileInput = (e) => {
     const files = Array.from(e.target.files || []);
-    processFiles(files);
+    void processFiles(files);
   };
 
   const removeFile = (index) => {
