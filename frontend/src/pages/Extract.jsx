@@ -162,13 +162,13 @@ export default function Extract() {
                     <div className="flex gap-3">
                       <button
                         onClick={reset}
-                        className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 font-bold transition-all text-sm"
+                        className="btn-secondary flex-1 py-3"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleExtract}
-                        className="flex-[2] py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                        className="btn-primary flex-[2] py-3 shadow-lg shadow-primary/30"
                       >
                         <Package className="size-5" />
                         Start Extraction
@@ -206,7 +206,7 @@ export default function Extract() {
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <button
                   onClick={reset}
-                  className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 font-bold transition-all flex items-center justify-center gap-2 text-sm"
+                  className="btn-secondary px-6 py-3 border-white/10 hover:bg-purple-600 hover:border-purple-600 dark:hover:bg-purple-600 text-white flex items-center justify-center gap-2 shadow-lg shadow-purple-500/10"
                 >
                   <RefreshCcw className="size-4" />
                   New Project
@@ -239,7 +239,7 @@ export default function Extract() {
                       );
                     }
                   }}
-                  className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  className="btn-primary px-8 py-3 shadow-lg shadow-primary/30"
                 >
                   <Download className="size-5" />
                   Download Selected ZIP
@@ -312,7 +312,7 @@ export default function Extract() {
               {/* Sidebar Actions */}
               <div className="space-y-6">
                 <div className="glass-card rounded-3xl p-6 sticky top-24">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <MessageCircle className="size-5 text-primary" />
                     Share Image Link
                   </h3>

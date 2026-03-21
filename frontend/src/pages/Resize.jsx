@@ -147,13 +147,13 @@ export default function Resize() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="lg:col-span-7 space-y-6"
+            className="lg:col-span-8 space-y-6"
           >
             <FileUpload
               accept="image/*"
               maxSize={20}
               onFileSelect={setFile}
-              title="Upload your image"
+              title="Drag & drop your image"
               subtitle="Supports JPG, PNG, WEBP, and TIFF up to 20MB"
             />
 
@@ -174,7 +174,7 @@ export default function Resize() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="lg:col-span-5"
+            className="lg:col-span-4"
           >
             <div className="glass-card rounded-xl p-6 sticky top-24">
               <div className="flex items-center gap-2 mb-6">
@@ -222,7 +222,7 @@ export default function Resize() {
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-semibold">
+                        <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">
                           Scale Percentage
                         </label>
                         <span className="text-primary font-bold">
@@ -282,7 +282,7 @@ function Header() {
       className="mb-8 sm:mb-12"
     >
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 text-white">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/20">
           <Maximize2 className="size-6" />
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
@@ -426,7 +426,7 @@ function ResizeInputs({
     <div className="space-y-4">
       <div className="flex gap-4 items-end">
         <div className="flex-1">
-          <label className="block text-sm font-semibold mb-2">Width (px)</label>
+          <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">Width (px)</label>
           <input
             type="number"
             value={width}
@@ -457,7 +457,7 @@ function ResizeInputs({
         </motion.button>
 
         <div className="flex-1">
-          <label className="block text-sm font-semibold mb-2">
+          <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">
             Height (px)
           </label>
           <input
@@ -577,13 +577,13 @@ function ActionPanel({
               <p>
                 New Dimensions:{" "}
                 <span className="text-green-400 font-bold">
-                  {result.newDimensions}
+                  {result.width} × {result.height} px
                 </span>
               </p>
               <p>
                 New Size:{" "}
                 <span className="text-green-400 font-bold">
-                  {result.resizedSize}
+                  {result.size} KB
                 </span>
               </p>
             </div>
@@ -635,7 +635,7 @@ function ActionPanel({
           disabled={!result || resizing}
           className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
             result && !resizing
-              ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white"
+              ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white shadow-lg shadow-purple-500/20"
               : "border-white/5 text-slate-500 cursor-not-allowed"
           }`}
         >

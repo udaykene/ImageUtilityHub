@@ -6,9 +6,8 @@ import {
   X,
   GripVertical,
   Settings,
-  MessageCircle,
-  Mail,
-  Cloud,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import FileUpload from "@/components/FileUpload";
 import { createPDFFromImages, downloadFile } from "@/services/api";
@@ -120,7 +119,7 @@ export default function ImagesToPDF() {
           className="mb-8 sm:mb-12"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/20">
               <FilePlus className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
@@ -148,18 +147,18 @@ export default function ImagesToPDF() {
               maxSize={10}
               multiple={true}
               onFileSelect={handleFileSelect}
-              title="Drop multiple images here"
+              title="Drag & drop images"
               subtitle="JPG, PNG, TIFF up to 10MB each"
             />
 
             {/* Error Message */}
             {error && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card rounded-xl p-4 border-2 border-red-500/50 bg-red-500/10"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-sm"
               >
-                <p className="text-red-500 font-medium">{error}</p>
+                <p>{error}</p>
               </motion.div>
             )}
 
@@ -266,7 +265,7 @@ export default function ImagesToPDF() {
               <div className="space-y-6">
                 {/* Page Orientation */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">
                     Page Orientation
                   </label>
                   <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
@@ -295,7 +294,7 @@ export default function ImagesToPDF() {
 
                 {/* Margin Size */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">
                     Margin Size
                   </label>
                   <div className="space-y-2">
@@ -329,7 +328,7 @@ export default function ImagesToPDF() {
 
                 {/* Page Size */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">
                     Page Size
                   </label>
                   <select
@@ -346,6 +345,33 @@ export default function ImagesToPDF() {
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-6 border-t border-white/5">
+                  {/* Success Card */}
+                  {result && !generating && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex flex-col gap-2"
+                    >
+                      <div className="flex items-center gap-3 text-green-400 text-sm font-bold">
+                        <CheckCircle2 className="size-5 shrink-0" />
+                        <p>PDF Generated!</p>
+                      </div>
+                      <div className="space-y-1 pl-8">
+                        <p className="text-xs text-slate-400">
+                          Pages:{" "}
+                          <span className="text-green-400 font-bold">
+                            {images.length}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Format:{" "}
+                          <span className="text-green-400 uppercase font-bold">
+                            {pageSize.toUpperCase()} · {orientation}
+                          </span>
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
                   <motion.button
                     whileHover={{ scale: images.length > 0 ? 1.02 : 1 }}
                     whileTap={{ scale: images.length > 0 ? 0.98 : 1 }}
@@ -386,7 +412,7 @@ export default function ImagesToPDF() {
                     disabled={!result}
                     className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
                       result
-                        ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white"
+                        ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white shadow-lg shadow-purple-500/20"
                         : "border-white/5 text-slate-500 cursor-not-allowed"
                     }`}
                   >

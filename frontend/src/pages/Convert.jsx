@@ -86,7 +86,7 @@ export default function Convert() {
           className="mb-8 sm:mb-12"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20">
               <RefreshCw className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
@@ -151,7 +151,7 @@ export default function Convert() {
               <div className="space-y-6">
                 {/* Output Format Selection */}
                 <div className="space-y-3">
-                  <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 sm:mb-0">
                     Output Format
                   </label>
                   <select
@@ -197,8 +197,7 @@ export default function Convert() {
                         <p className="text-xs text-slate-400">
                           New Size:{" "}
                           <span className="text-green-400 font-bold">
-                            {result.data?.compressedSize ||
-                              result.compressedSize}
+                            {result.data?.size || result.size} KB
                           </span>
                         </p>
                         <p className="text-xs text-slate-400">

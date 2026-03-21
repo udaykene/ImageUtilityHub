@@ -5,9 +5,8 @@ import {
   Download,
   Settings,
   Info,
-  MessageCircle,
-  Mail,
-  Cloud,
+  CheckCircle2,
+  AlertCircle,
   ArrowLeftRight,
   Check,
 } from "lucide-react";
@@ -88,8 +87,9 @@ export default function Compress() {
   };
 
   const originalSizeKB = file ? (file.size / 1024).toFixed(2) : 0;
+  // Backend returns compressedSize in bytes, so divide by 1024
   const estimatedSizeKB = result
-    ? parseFloat(result.data?.compressedSize || result.compressedSize)
+    ? (result.data?.compressedSize || result.compressedSize) / 1024
     : parseFloat(getEstimatedSize().toFixed(2));
   const savingsPercent = result
     ? result.data?.savings || result.savings
@@ -107,7 +107,7 @@ export default function Compress() {
           className="mb-8 sm:mb-12"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20">
               <Zap className="size-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black">
@@ -133,14 +133,18 @@ export default function Compress() {
               accept="image/*"
               maxSize={20}
               onFileSelect={handleFileSelect}
-              title="Drag & drop your image here"
+              title="Drag & drop your image"
               subtitle="Supports JPG, PNG, and WebP up to 20MB"
             />
 
             {error && (
-              <div className="glass-card rounded-xl p-4 border-2 border-red-500/50 bg-red-500/10">
-                <p className="text-red-500 font-medium">{error}</p>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-sm"
+              >
+                <p>{error}</p>
+              </motion.div>
             )}
 
             {file && (
@@ -238,7 +242,7 @@ export default function Compress() {
               </div>
 
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-sm font-medium text-slate-400">
+                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">
                   Quick Presets
                 </label>
                 <select
@@ -262,7 +266,7 @@ export default function Compress() {
 
               <div className="space-y-4 pt-4 border-t border-white/5">
                 <div className="flex justify-between items-center text-sm">
-                  <label className="font-medium text-slate-400">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">
                     Compression Level
                   </label>
                   <span className="text-primary font-bold">{quality}%</span>
@@ -281,24 +285,78 @@ export default function Compress() {
               </div>
 
               <div className="pt-6 border-t border-white/5 space-y-3">
-                <button
+                {/* Success Card */}
+                {result && !converting && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center gap-3 text-green-400 text-sm font-bold">
+                      <CheckCircle2 className="size-5 shrink-0" />
+                      <p>Compression Successful!</p>
+                    </div>
+                    <div className="space-y-1 pl-8">
+                      <p className="text-xs text-slate-400">
+                        New Size:{" "}
+                        <span className="text-green-400 font-bold">
+                          {estimatedSizeKB.toFixed(2)} KB
+                        </span>
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Savings:{" "}
+                        <span className="text-green-400 font-bold">
+                          -{savingsPercent}%
+                        </span>
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+                <motion.button
+                  whileHover={{ scale: file && !converting ? 1.02 : 1 }}
+                  whileTap={{ scale: file && !converting ? 0.98 : 1 }}
                   onClick={handleCompress}
                   disabled={!file || converting}
-                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold ${
+                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
                     file && !converting
-                      ? "bg-primary text-white"
-                      : "bg-slate-800 text-slate-500"
+                      ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                      : "bg-slate-800 text-slate-500 cursor-not-allowed"
                   }`}
                 >
-                  {converting ? "Compressing..." : "Compress Now"}
-                </button>
-                <button
+                  {converting ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                      >
+                        <Zap className="size-5" />
+                      </motion.div>
+                      Compressing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="size-5" />
+                      Compress Now
+                    </>
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: result && !converting ? 1.02 : 1 }}
+                  whileTap={{ scale: result && !converting ? 0.98 : 1 }}
                   onClick={handleDownload}
-                  disabled={!result}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border border-white/10"
+                  disabled={!result || converting}
+                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold border transition-all ${
+                    result && !converting
+                      ? "border-white/10 hover:bg-purple-600 hover:border-purple-600 text-white shadow-lg shadow-purple-500/20"
+                      : "border-white/5 text-slate-500 cursor-not-allowed"
+                  }`}
                 >
                   <Download className="size-5" /> Download
-                </button>
+                </motion.button>
 
                 {result && !converting && (
                   <div className="pt-4 border-t border-white/5 flex justify-center">
