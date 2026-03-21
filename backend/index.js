@@ -12,16 +12,26 @@ const PORT = process.env.PORT || 3000;
 app.use(
   cors({
     origin: function (origin, callback) {
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://image-utility-hub-hktd.vercel.app",
+      ];
+      
+      // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       
-      const allowedOrigin = process.env.FRONTEND_URL;
-      if (origin === allowedOrigin || origin === "http://localhost:5173" || origin.endsWith('.vercel.app')) {
-        return callback(null, true);
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        console.log("CORS blocked origin:", origin);
+        callback(new Error('Not allowed by CORS'));
       }
-      
-      return callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   })
 );
 app.use(bodyParser.json());

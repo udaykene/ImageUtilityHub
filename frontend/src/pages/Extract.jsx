@@ -28,8 +28,12 @@ export default function Extract() {
   const selectedImageObjects = (result?.images || []).filter((img) =>
     selectedImages.includes(img.publicId),
   );
-  const primaryShareUrl =
-    selectedImageObjects[0]?.cloudinaryUrl || result?.images?.[0]?.cloudinaryUrl;
+  
+  const primaryFile = selectedImageObjects[0] || result?.images?.[0];
+  const primaryShareUrl = primaryFile?.cloudinaryUrl;
+  const primaryFilename = primaryFile?.name || "extracted-image";
+  const primaryMimeType = primaryFile?.format ? `image/${primaryFile.format}` : "image/png";
+  
   const isPageFallback = result?.fallbackUsed;
 
   const handleFileSelect = (selectedFile) => {
@@ -314,14 +318,14 @@ export default function Extract() {
                 <div className="glass-card rounded-3xl p-6 sticky top-24">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <MessageCircle className="size-5 text-primary" />
-                    Share Image Link
+                    Share Selected Image
                   </h3>
 
                   <div className="flex justify-center pt-4">
                     <ShareButton 
                       cloudinaryUrl={primaryShareUrl}
-                      filename="Extracted Images"
-                      mimeType="application/zip"
+                      filename={primaryFilename}
+                      mimeType={primaryMimeType}
                     />
                   </div>
                 </div>
