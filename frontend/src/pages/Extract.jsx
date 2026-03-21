@@ -112,7 +112,7 @@ export default function Extract() {
             >
               <FileUpload
                 accept="application/pdf"
-                maxSize={50}
+                maxSize={4.4}
                 onFileSelect={handleFileSelect}
                 title="Drag & drop PDF here"
                 subtitle="Maximum file size: 50MB"

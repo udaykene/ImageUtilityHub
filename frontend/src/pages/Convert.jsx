@@ -109,8 +109,8 @@ export default function Convert() {
             className="lg:col-span-8 space-y-6"
           >
             <FileUpload
-              accept="image/*"
-              maxSize={20}
+              accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif,.heic"
+              maxSize={4.4}
               onFileSelect={handleFileSelect}
               title="Drag & drop your image"
               subtitle="Supports all major image formats up to 20MB"

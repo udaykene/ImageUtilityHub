@@ -131,7 +131,7 @@ export default function Compress() {
           >
             <FileUpload
               accept="image/*"
-              maxSize={20}
+              maxSize={4.4}
               onFileSelect={handleFileSelect}
               title="Drag & drop your image here"
               subtitle="Supports JPG, PNG, and WebP up to 20MB"
