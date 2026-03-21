@@ -6,7 +6,7 @@ const imageRoutes = require("./src/routes/imageRoutes");
 const errorHandler = require("./src/middlewares/errorHandler");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(
@@ -40,28 +40,17 @@ app.use(errorHandler);
 
 let server = null;
 
-// Start server only for local/non-Vercel runtime
-if (!process.env.VERCEL) {
-  server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
-    console.log(
-      `Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME}`
-    );
-    console.log(
-      `Auto-delete after: ${process.env.CLOUDINARY_AUTO_DELETE_HOURS} hours`
-    );
-  });
-}
-
-// Heartbeat for local debugging only
-if (!process.env.VERCEL) {
-  setInterval(() => {
-    if (process.env.NODE_ENV === "development") {
-      // console.log("Heartbeat - Server is alive");
-    }
-  }, 30000);
-}
+// Start server
+server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(
+    `Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME}`
+  );
+  console.log(
+    `Auto-delete after: ${process.env.CLOUDINARY_AUTO_DELETE_HOURS} hours`
+  );
+});
 
 // Process event listeners for debugging
 process.on("SIGINT", () => {
