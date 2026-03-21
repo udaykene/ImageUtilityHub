@@ -44,7 +44,7 @@ const isAcceptedBy = (file, acceptList) => {
 
 export default function FileUpload({ 
   accept, 
-  maxSize = 4.4, 
+  maxSize = 20, 
   onFileSelect,
   multiple = false,
   title = "Drag & drop your file here",

@@ -145,7 +145,7 @@ export default function ImagesToPDF() {
             {/* File Upload Component */}
             <FileUpload
               accept="image/*"
-              maxSize={4.4}
+              maxSize={10}
               multiple={true}
               onFileSelect={handleFileSelect}
               title="Drop multiple images here"

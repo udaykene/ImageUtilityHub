@@ -110,7 +110,7 @@ export default function Convert() {
           >
             <FileUpload
               accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff,.gif,.heic"
-              maxSize={4.4}
+              maxSize={20}
               onFileSelect={handleFileSelect}
               title="Drag & drop your image"
               subtitle="Supports all major image formats up to 20MB"

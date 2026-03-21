@@ -151,7 +151,7 @@ export default function Resize() {
           >
             <FileUpload
               accept="image/*"
-              maxSize={4.4}
+              maxSize={20}
               onFileSelect={setFile}
               title="Upload your image"
               subtitle="Supports JPG, PNG, WEBP, and TIFF up to 20MB"
